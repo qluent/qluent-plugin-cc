@@ -5,6 +5,7 @@ analysis, and find root causes — all through slash commands.
 
 ## What You Get
 
+- **`qluent:qluent-analyst` agent** — autonomous KPI analyst that runs the full investigation workflow end-to-end. Just ask a question like "why did revenue drop?" and it handles the rest.
 - `/qluent:investigate` — bundled validation, trend, evaluation, and root cause analysis
 - `/qluent:trend` — multi-period trend analysis
 - `/qluent:rca` — standalone root cause analysis with Shapley attribution
@@ -99,16 +100,23 @@ endpoint settings are read from `~/.qluent/config.json`.
 
 ## Typical flows
 
-### Quick investigation
+### Just ask (agent handles everything)
+
+```text
+Why did revenue drop last week?
+What's driving the ROAS change this month?
+How is conversion trending?
+```
+
+The `qluent-analyst` agent picks this up automatically, runs investigate, follows up
+with trend/RCA/compare as needed, and returns a synthesized answer.
+
+### Manual slash commands
+
+If you prefer step-by-step control:
 
 ```bash
 /qluent:investigate why did ROAS drop this week?
-```
-
-### Deep dive after investigation
-
-```bash
-/qluent:investigate revenue --period "last month"
 /qluent:trend revenue --periods 8 --grain week
 /qluent:compare revenue orders --period "last month"
 ```

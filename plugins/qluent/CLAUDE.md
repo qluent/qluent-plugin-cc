@@ -21,6 +21,12 @@ into a single call. Running individual commands is slower and misses agent-level
 "yesterday", "last 30 days", "week over week", "month over month", or explicit ISO dates
 (YYYY-MM-DD:YYYY-MM-DD).
 
+## Agent
+
+The `qluent:qluent-analyst` agent handles KPI questions autonomously. It runs the full
+investigate -> follow-up -> synthesize workflow without manual intervention. Use it
+proactively when the user asks about metric movements.
+
 ## When to use this plugin
 
 Use qluent commands when the user asks about:
