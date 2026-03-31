@@ -32,18 +32,14 @@ qluent --version
 
 ## Step 2: Check configuration
 
-```bash
-qluent config show
-```
-
-If not configured:
-- Tell the user to run `!qluent setup` to configure their API key and endpoint.
-
-## Step 3: List available trees
+List available trees as a proxy for working configuration:
 
 ```bash
 qluent trees list
 ```
+
+If the command fails with an auth or config error:
+- Tell the user to run `!qluent setup` to configure their API key and endpoint.
 
 If trees are returned, qluent is ready. Report the number of available metric trees.
 
@@ -53,6 +49,6 @@ If no trees are found, tell the user their workspace may not have any metric tre
 
 Present a summary:
 - Installation status
-- Configuration status
+- Configuration status (based on whether tree listing succeeded)
 - Number of available metric trees
 - Ready to use: yes/no
