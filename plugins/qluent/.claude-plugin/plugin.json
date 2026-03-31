@@ -1,0 +1,8 @@
+{
+  "name": "qluent",
+  "version": "0.1.0",
+  "description": "Analyze business metrics, investigate KPI movements, and run deterministic root cause analysis from Claude Code.",
+  "author": {
+    "name": "Qluent"
+  }
+}
