@@ -44,10 +44,25 @@ Read the investigation bundle in this order:
 - **`needs_tree_selection`**: Inspect `match.top_candidates`, pick the strongest tree (or ask the user), and re-run with the explicit tree_id.
 - **`needs_more_data`** or **`partially_resolved`**: Run the first relevant command from `agent.recommended_next_steps`. Do NOT invent your own drill-down until you've exhausted the recommended steps.
 
-## Step 4: Summarize
+## Step 4: Parallel deep-dive (when warranted)
+
+For complex investigations, launch specialized agents in parallel using the Agent tool:
+
+- **`trend-interpreter`** (sonnet): Analyze multi-period trends to identify patterns, anomalies, and seasonal effects
+- **`rca-validator`** (opus): Cross-reference RCA findings against trend data to filter out data artifacts
+- **`segment-explorer`** (sonnet): Drill into top Shapley contributors to find which segments concentrate the movement
+
+Only use this step when:
+- The user explicitly asks for a deeper analysis
+- The investigation covers a broad time range (quarter+)
+- RCA confidence is low and validation would help
+- Multiple competing drivers need independent verification
+
+## Step 5: Summarize
 
 - Lead with the top findings
 - Verify against `root_cause.conclusion.takeaways` and supporting evidence
+- If agents were used, synthesize their outputs into a cohesive narrative
 - Always report the exact current and comparison windows used
 
 ## Rules

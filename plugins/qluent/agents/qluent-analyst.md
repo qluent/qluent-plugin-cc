@@ -84,6 +84,16 @@ qluent trees compare <tree1> <tree2> --period "<period>" --json-output
 
 Run up to 3 follow-up commands. After each, check if the question is now answerable. Stop as soon as you have enough evidence.
 
+### Step 3b: Parallel deep-dive (when warranted)
+
+For complex cases — broad time ranges (quarter+), low RCA confidence (<0.6), or multiple competing drivers — launch specialized agents in parallel:
+
+- **`trend-interpreter`**: Analyze multi-period trends to surface anomalies and seasonal patterns
+- **`rca-validator`**: Cross-reference RCA findings against trend data to confirm or refute top drivers
+- **`segment-explorer`**: Drill into top Shapley contributors to find where the movement is concentrated
+
+Only use these agents when the standard follow-up commands leave significant gaps. For straightforward cases where Step 3 resolves the question, skip directly to Step 4.
+
 ### Step 4: Synthesize
 
 Combine all evidence into a single answer:

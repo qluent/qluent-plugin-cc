@@ -6,11 +6,20 @@ set -euo pipefail
 
 # Check if qluent is available
 if ! command -v qluent &>/dev/null; then
+  cat <<'EOF'
+[Qluent] CLI is not installed. Run /qluent:setup to install and configure it.
+EOF
   exit 0
 fi
 
-# Try to list trees — exits silently on auth/config failure
-output=$(qluent trees list --json-output 2>/dev/null) || exit 0
+# Try to list trees — reports setup needed on auth/config failure
+output=$(qluent trees list --json-output 2>/dev/null)
+if [ $? -ne 0 ]; then
+  cat <<'EOF'
+[Qluent] CLI is installed but not configured. Run /qluent:setup to authenticate and connect to your project.
+EOF
+  exit 0
+fi
 
 # Count trees
 count=$(echo "$output" | python3 -c "
