@@ -32,6 +32,7 @@ tree for the latest period and present real findings rather than listing feature
 - `/qluent:trend` — Multi-period trend analysis. Use as a follow-up.
 - `/qluent:rca` — Standalone root cause analysis. Use as a follow-up.
 - `/qluent:compare` — Side-by-side tree comparison. Use as a follow-up.
+- `/qluent:visualize` — Render the latest analysis as interactive HTML charts in the browser.
 - `/qluent:setup` — Check installation and configuration.
 
 **IMPORTANT: Always start with `/qluent:investigate`.** Do NOT manually chain `trend`,
@@ -53,6 +54,25 @@ into a single call. Running individual commands is slower and misses agent-level
 
 The specialized agents (trend-interpreter, rca-validator, segment-explorer) are launched
 in parallel by the investigate command or qluent-analyst for complex, broad, or low-confidence cases.
+
+## Visualization
+
+After any qluent analysis command produces JSON output, save it for visualization:
+
+```bash
+qluent trees investigate ... --json-output | tee /tmp/qluent-viz-data.json
+```
+
+Or redirect a copy when piping isn't practical:
+
+```bash
+# After running the command, save its output
+cp /tmp/qluent-last-output.json /tmp/qluent-viz-data.json
+```
+
+Then offer the user: "Want to see this as charts? Run `/qluent:visualize`"
+
+This applies to all commands: investigate, trend, rca, and compare.
 
 ## When to use this plugin
 
