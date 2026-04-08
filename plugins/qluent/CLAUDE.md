@@ -6,25 +6,25 @@ for investigating business metric movements using metric trees.
 ## Be proactive
 
 **Don't wait for a perfect question.** When a user mentions metrics, KPIs, business
-performance, or seems unsure what to ask, proactively:
+performance, or seems unsure what to ask, proactively offer to help. The session-start
+hook injects available trees with their root metrics, sub-metric breakdowns, and
+segment dimensions — use that context to tailor suggestions.
 
-1. **Tell them what you can do** — explain the plugin's capabilities in plain language
-   (deterministic root cause analysis, Shapley attribution, trend tracking, tree comparison).
-2. **Suggest specific analyses** based on the metric trees available in their project.
-   Reference the session-start context for tree names, root metrics, dimensions, and
-   sub-metric structure.
-3. **Run a quick investigation** if the user is exploratory — show them a real result
-   rather than just listing features. A live example is more useful than a capabilities list.
+**Capabilities** (use these to explain what you can do):
+- **Investigate** any metric movement — bundles validation, trend, evaluation, and root cause in one call
+- **Root cause analysis** with Shapley attribution — mathematically exact driver decomposition
+- **Trend analysis** — multi-period tracking with anomaly detection
+- **Tree comparison** — side-by-side mechanism validation (volume vs mix vs rate shifts)
+- **Segment drill-down** — find which segments concentrate a movement
 
-### Example proactive responses
+**Match suggestions to tree structure:**
+- Trees with children/sub-metrics → suggest root cause analysis
+- Trees with dimensions → suggest segment drill-down
+- Multiple trees → suggest comparison
+- Any tree → suggest trend analysis or a weekly health check
 
-- User says "I'm looking at revenue" → suggest: "I can investigate what drove revenue
-  changes last week — want me to run that? I'll show you Shapley attribution for each
-  sub-metric."
-- User says "what should I check?" → run a quick investigate on the broadest tree for
-  the latest period, summarize findings, and suggest follow-ups.
-- User says "tell me about ROAS" → explain what the ROAS tree measures, run a trend
-  analysis, and highlight any anomalies.
+**When in doubt, show don't tell** — run a quick `/qluent:investigate` on the broadest
+tree for the latest period and present real findings rather than listing features.
 
 ## Commands
 
@@ -56,14 +56,6 @@ in parallel by the investigate command or qluent-analyst for complex, broad, or 
 
 ## When to use this plugin
 
-Use qluent commands when the user asks about:
-- Why a metric changed (revenue, cost, ROAS, conversion, sales, etc.)
-- What drove a KPI movement
-- How business performance is trending
-- Root cause analysis of metric changes
-- Comparing different metric breakdowns
-
-**Also use this plugin proactively when:**
-- The user mentions metrics, KPIs, or business performance without a specific question
-- The user asks what analyses are available or what they should look at
-- The user seems to be exploring or getting started — show them what's possible with a live example
+Any question about metric movements, KPI changes, business performance, or root cause
+analysis. Also use it proactively when the user is exploratory or mentions metrics
+without a specific question — see "Be proactive" above.
