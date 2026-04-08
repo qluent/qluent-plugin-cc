@@ -57,22 +57,25 @@ in parallel by the investigate command or qluent-analyst for complex, broad, or 
 
 ## Visualization
 
-After any qluent analysis command produces JSON output, save it for visualization:
+**Always use `/qluent:visualize` for charts.** Never write custom HTML, CSS, or Chart.js code. The plugin includes a styled dashboard renderer (`render-charts.sh`) with the Qluent design system — custom HTML will look wrong and miss brand styling.
+
+All qluent analysis commands should pipe through `tee` to auto-save visualization data:
 
 ```bash
-qluent trees investigate ... --json-output | tee /tmp/qluent-viz-data.json
+qluent trees investigate ... --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 ```
 
-Or redirect a copy when piping isn't practical:
+This makes `/qluent:visualize` immediately available after any analysis.
 
-```bash
-# After running the command, save its output
-cp /tmp/qluent-last-output.json /tmp/qluent-viz-data.json
-```
+## Use built-in skills, don't improvise
 
-Then offer the user: "Want to see this as charts? Run `/qluent:visualize`"
+This plugin provides purpose-built skills for common workflows. **Always use them instead of improvising.**
 
-This applies to all commands: investigate, trend, rca, and compare.
+- Charts or dashboards → `/qluent:visualize` (never write custom HTML)
+- Analysis → `/qluent:investigate` (never manually chain CLI commands as a first step)
+- Follow-ups → `/qluent:trend`, `/qluent:rca`, `/qluent:compare` (not ad-hoc scripts)
+
+The PostToolUse hook will remind you about available skills after qluent commands complete. Follow those reminders.
 
 ## When to use this plugin
 

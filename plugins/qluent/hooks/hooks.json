@@ -1,5 +1,5 @@
 {
-  "description": "Qluent session hooks — injects available metric trees on session start.",
+  "description": "Qluent hooks — session context injection and post-command guidance.",
   "hooks": {
     "SessionStart": [
       {
@@ -8,6 +8,18 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh\"",
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/post-bash.sh\"",
+            "timeout": 5
           }
         ]
       }

@@ -30,18 +30,18 @@ When a user's question is vague or exploratory (e.g., "what can you do?", "help 
 
 ### Step 1: Investigate
 
-Always start with the bundled investigation command.
+Always start with the bundled investigation command. Pipe through `tee` to auto-save visualization data.
 
 For natural-language questions:
 
 ```bash
-qluent trees investigate --question "<user's question>" --json-output
+qluent trees investigate --question "<user's question>" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 ```
 
 For a specific tree and period:
 
 ```bash
-qluent trees investigate <tree_id> --period "<period>" --json-output
+qluent trees investigate <tree_id> --period "<period>" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 ```
 
 ### Step 2: Parse and decide

@@ -10,22 +10,24 @@ This is the primary entry point for all metric analysis. It bundles validation, 
 
 ## Step 1: Run the investigation
 
+Always pipe qluent output through `tee` to save visualization data. This makes `/qluent:visualize` immediately available.
+
 If the user asked a natural-language question:
 
 ```bash
-qluent trees investigate --question "$ARGUMENTS" --json-output
+qluent trees investigate --question "$ARGUMENTS" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 ```
 
 If the user named a specific tree and/or date windows, construct the command explicitly:
 
 ```bash
-qluent trees investigate <tree_id> --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD --json-output
+qluent trees investigate <tree_id> --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 ```
 
 For natural-language periods:
 
 ```bash
-qluent trees investigate <tree_id> --period "last week" --json-output
+qluent trees investigate <tree_id> --period "last week" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 ```
 
 ## Step 2: Parse the JSON response
