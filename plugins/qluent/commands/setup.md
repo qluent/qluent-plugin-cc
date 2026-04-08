@@ -57,10 +57,25 @@ If the command fails with an auth error, the credentials may be invalid or expir
 
 If no trees are found, tell the user their workspace may not have any metric trees configured yet.
 
+## Step 4: Kick off exploration
+
+If Step 3 succeeded and trees are available, run the session-start hook to inject rich tree context:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
+```
+
+Then proactively suggest an initial investigation based on the available trees. For example:
+- If there's a revenue tree, offer to investigate recent revenue performance
+- If there are multiple trees, highlight what each one can answer
+- Tailor suggestions to the tree structure (dimensions → segment drill-down, children → root cause)
+
+The goal is to get the user into analysis immediately after setup, not leave them staring at a status summary.
+
 ## Output
 
 Present a summary:
 - Installation: installed / not installed
 - Authentication: configured / not configured
-- Metric trees: N available (list names)
-- Ready to use: yes / no
+- Metric trees: N available (with descriptions and what each can answer)
+- Suggested first question based on available trees
