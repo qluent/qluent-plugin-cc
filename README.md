@@ -3,50 +3,22 @@
 Deterministic KPI analysis inside Claude Code. Ask why a metric changed and get
 an answer backed by Shapley attribution — not vibes.
 
-## Requirements
+## Getting Started
 
-- **Qluent account** — [sign up at qluent.com](https://qluent.com)
-- **Node.js 18+** (for CLI installation)
+Install the plugin in Claude Code:
 
-## Install
-
-Add the marketplace in Claude Code:
-
-```bash
-/plugin marketplace add qluent/qluent-plugin-cc
+```
+/install qluent/qluent-plugin-cc
 ```
 
-Install the plugin:
+Then run setup — it installs the CLI, opens your browser to log in, and
+shows your available metric trees:
 
-```bash
-/plugin install qluent@qluent-metric-trees
 ```
-
-Reload plugins:
-
-```bash
-/reload-plugins
-```
-
-Then run:
-
-```bash
 /qluent:setup
 ```
 
-`/qluent:setup` will check whether the Qluent CLI is installed and ready. If
-it's missing and npm is available, it can install it for you.
-
-If the CLI is installed but you're not logged in yet, run:
-
-```bash
-!qluent login
-```
-
-This opens your browser for SSO login. No API key needed.
-
-After install, you should see the slash commands listed below and the
-`qluent:qluent-analyst` agent in `/agents`.
+That's it. You're ready to ask questions.
 
 ## Usage
 
