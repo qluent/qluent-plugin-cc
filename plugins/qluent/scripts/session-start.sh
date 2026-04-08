@@ -22,91 +22,82 @@ EOF
   exit 0
 fi
 
-# Extract tree details and generate proactive suggestions
 context=$(echo "$output" | python3 -c "
 import sys, json
 
 try:
     data = json.load(sys.stdin)
-    trees = data.get('trees', data) if isinstance(data, dict) else data
+    raw = data.get('trees', data) if isinstance(data, dict) else data
 except Exception:
     sys.exit(0)
 
-if not trees:
+if not raw:
     sys.exit(0)
 
+# Normalize tree dicts so field-name aliases are resolved once
+EFFICIENCY_KEYWORDS = ('roas', 'efficiency', 'conversion', 'margin', 'ratio')
+
+def norm(t):
+    return {
+        'id': t.get('id', t.get('tree_id', 'unknown')),
+        'root': t.get('root_metric', t.get('root', '')),
+        'desc': t.get('description', t.get('label', '')),
+        'dims': t.get('dimensions', []),
+        'children': t.get('children', t.get('child_metrics', [])),
+    }
+
+trees = [norm(t) for t in raw]
 count = len(trees)
 
-# --- Tree listing with metadata ---
+# Build tree listing with metadata
 tree_lines = []
 for t in trees:
-    tid = t.get('id', t.get('tree_id', 'unknown'))
-    desc = t.get('description', t.get('label', ''))
-    root = t.get('root_metric', t.get('root', ''))
-    dims = t.get('dimensions', [])
-    children = t.get('children', t.get('child_metrics', []))
-
-    parts = [f'- **{tid}**']
-    if desc:
-        parts[0] += f': {desc}'
+    parts = [f'- **{t[\"id\"]}**']
+    if t['desc']:
+        parts[0] += f': {t[\"desc\"]}'
     meta = []
-    if root:
-        meta.append(f'root metric: {root}')
-    if children:
-        child_names = [c.get('id', c.get('name', str(c))) if isinstance(c, dict) else str(c) for c in children[:5]]
+    if t['root']:
+        meta.append(f'root metric: {t[\"root\"]}')
+    if t['children']:
+        child_names = [c.get('id', c.get('name', str(c))) if isinstance(c, dict) else str(c) for c in t['children'][:5]]
         meta.append('breaks into: ' + ', '.join(child_names))
-    if dims:
-        dim_names = [d.get('name', str(d)) if isinstance(d, dict) else str(d) for d in dims[:4]]
+    if t['dims']:
+        dim_names = [d.get('name', str(d)) if isinstance(d, dict) else str(d) for d in t['dims'][:4]]
         meta.append('segments: ' + ', '.join(dim_names))
     if meta:
         parts.append('  (' + ' | '.join(meta) + ')')
     tree_lines.append(''.join(parts))
 
-# --- Generate suggested analyses based on tree structure ---
+# Generate suggested analyses based on tree structure
+# Capped at 4 to keep session-start output scannable
 suggestions = []
+first = trees[0]
+first_label = first['root'] or first['id']
 
-# Suggest weekly health check for any tree
-first_tree = trees[0]
-first_id = first_tree.get('id', first_tree.get('tree_id', 'unknown'))
-first_root = first_tree.get('root_metric', first_tree.get('root', first_id))
-suggestions.append(f'\"How did {first_root} perform last week?\" — weekly health check on **{first_id}**')
+suggestions.append(f'\"How did {first_label} perform last week?\" — weekly health check on **{first[\"id\"]}**')
 
-# If multiple trees exist, suggest comparison
 if count >= 2:
-    t1 = trees[0].get('id', trees[0].get('tree_id', 'unknown'))
-    t2 = trees[1].get('id', trees[1].get('tree_id', 'unknown'))
-    suggestions.append(f'\"Compare {t1} vs {t2} last month\" — validate whether a volume or mix shift is driving changes')
+    suggestions.append(f'\"Compare {trees[0][\"id\"]} vs {trees[1][\"id\"]} last month\" — validate whether a volume or mix shift is driving changes')
 
-# Suggest trend analysis for a tree with a recognizable root
 for t in trees:
-    root = t.get('root_metric', t.get('root', '')).lower()
-    tid = t.get('id', t.get('tree_id', 'unknown'))
-    if any(kw in root for kw in ['roas', 'efficiency', 'conversion', 'margin', 'ratio']):
-        suggestions.append(f'\"Is {root} trending up or down?\" — multi-period trend on **{tid}** to spot patterns')
+    if any(kw in t['root'].lower() for kw in EFFICIENCY_KEYWORDS):
+        suggestions.append(f'\"Is {t[\"root\"]} trending up or down?\" — multi-period trend on **{t[\"id\"]}** to spot patterns')
         break
 
-# Suggest root cause analysis for a tree with children
 for t in trees:
-    children = t.get('children', t.get('child_metrics', []))
-    tid = t.get('id', t.get('tree_id', 'unknown'))
-    root = t.get('root_metric', t.get('root', tid))
-    if children and tid != first_id:
-        suggestions.append(f'\"Why did {root} change this month?\" — deterministic root cause analysis on **{tid}**')
+    if t['children'] and t['id'] != first['id']:
+        label = t['root'] or t['id']
+        suggestions.append(f'\"Why did {label} change this month?\" — deterministic root cause analysis on **{t[\"id\"]}**')
         break
 
-# Segment drill-down if any tree has dimensions
 for t in trees:
-    dims = t.get('dimensions', [])
-    tid = t.get('id', t.get('tree_id', 'unknown'))
-    if dims:
-        dim_name = dims[0].get('name', str(dims[0])) if isinstance(dims[0], dict) else str(dims[0])
-        suggestions.append(f'\"Which {dim_name} segments drove the biggest changes?\" — segment-level Shapley attribution on **{tid}**')
+    if t['dims']:
+        dim_name = t['dims'][0].get('name', str(t['dims'][0])) if isinstance(t['dims'][0], dict) else str(t['dims'][0])
+        suggestions.append(f'\"Which {dim_name} segments drove the biggest changes?\" — segment-level Shapley attribution on **{t[\"id\"]}**')
         break
 
-# Cap suggestions
 suggestions = suggestions[:4]
 
-# --- Output ---
 print(f'[Qluent] {count} metric tree{\"s\" if count != 1 else \"\"} available for analysis:')
 print()
 for line in tree_lines:
