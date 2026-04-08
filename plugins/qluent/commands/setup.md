@@ -10,8 +10,10 @@ Verify that qluent is installed and configured.
 
 ## Step 1: Check installation
 
+Check if the CLI is globally installed (do NOT use npx — it runs temporarily without installing):
+
 ```bash
-which qluent || npx @qluent/cli --help
+which qluent
 ```
 
 If qluent is not found:
@@ -42,7 +44,7 @@ If the output shows an API key and project UUID, configuration is present.
 
 If no config file is found or credentials are missing:
 - Tell the user to log in by running `!qluent login` in this session. This opens a browser for SSO authentication and automatically configures the API key, project, and email.
-- If browser login is not possible (e.g. remote/headless), they can run `!qluent setup` instead for interactive terminal prompts.
+- **Always recommend `qluent login` first** — it is the preferred auth method. Only mention `qluent setup` as a fallback for headless environments without a browser.
 - Do not attempt to run `qluent login` or `qluent setup` via Bash — these are interactive commands that require the `!` prefix.
 
 ## Step 3: Verify access

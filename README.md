@@ -5,18 +5,18 @@ an answer backed by Shapley attribution — not vibes.
 
 ## Getting Started
 
-In Claude Code, install the plugin:
+Install the CLI and log in:
+
+```bash
+npm install -g @qluent/cli
+qluent login
+```
+
+Then add the plugin in Claude Code:
 
 ```
 /plugin marketplace add qluent/qluent-plugin-cc
 /reload-plugins
-```
-
-Then run setup — it installs the CLI, opens your browser to log in, and
-shows your available metric trees:
-
-```
-/qluent:setup
 ```
 
 You're ready to ask questions.
