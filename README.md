@@ -9,7 +9,6 @@ In Claude Code, install the plugin:
 
 ```
 /plugin marketplace add qluent/qluent-plugin-cc
-/plugin install qluent@qluent-metric-trees
 /reload-plugins
 ```
 
