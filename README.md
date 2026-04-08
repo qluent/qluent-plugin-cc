@@ -5,10 +5,12 @@ an answer backed by Shapley attribution — not vibes.
 
 ## Getting Started
 
-Install the plugin in Claude Code:
+In Claude Code, install the plugin:
 
 ```
-/install qluent/qluent-plugin-cc
+/plugin marketplace add qluent/qluent-plugin-cc
+/plugin install qluent@qluent-metric-trees
+/reload-plugins
 ```
 
 Then run setup — it installs the CLI, opens your browser to log in, and
@@ -18,7 +20,7 @@ shows your available metric trees:
 /qluent:setup
 ```
 
-That's it. You're ready to ask questions.
+You're ready to ask questions.
 
 ## Usage
 
