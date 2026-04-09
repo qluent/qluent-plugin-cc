@@ -21,14 +21,4 @@ To pin the reference date, add `--as-of YYYY-MM-DD`.
 
 ## Interpret the results
 
-For each period, report: value, absolute change, percentage change, and trend label.
-
-Trend labels:
-- **accelerating**: positive and growing faster
-- **decelerating**: positive but slowing down
-- **recovering**: was negative, now positive
-- **declining**: was positive, now negative
-- **volatile**: direction changes frequently
-- **stable**: changes within +/-2%
-
-Highlight the anomalous period and suggest drilling into it with `/qluent:investigate` or `/qluent:rca`.
+The response includes pre-computed trend labels and anomaly flags for each period. Present these to the user and suggest drilling into anomalous periods with `/qluent:investigate` or `/qluent:rca`.
