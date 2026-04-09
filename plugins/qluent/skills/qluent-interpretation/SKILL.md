@@ -53,6 +53,13 @@ Use elasticity to prioritize which sub-metrics to focus on. A node with high ela
 
 Elasticity complements Shapley attribution: Shapley explains *what caused* a past change, elasticity indicates *what would matter most* for future changes.
 
+When a structured `levers` block is available:
+- `recommended_direction = increase` means raising that node improves the root KPI
+- `recommended_direction = decrease` means reducing that node improves the root KPI
+- `scenario_impacts[].estimated_root_delta_ratio` is the implied root percent change
+- `scenario_impacts[].estimated_root_delta_value` is the implied absolute root change using the current-period root value
+- These are local linear estimates from the current operating point, not forecasts or causal guarantees
+
 ## Synthesis pattern
 
 Combine evidence across steps: trend observation (direction + anomaly) + Shapley attribution (which sub-metric drove it) + mechanism validation (volume vs mix shift via `/qluent:compare`) + elasticity (which levers matter most going forward) = conclusion with actionable takeaway.

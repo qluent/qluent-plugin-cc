@@ -17,6 +17,7 @@ segment dimensions — use that context to tailor suggestions.
 - **Tree comparison** — side-by-side mechanism validation (volume vs mix vs rate shifts)
 - **Segment drill-down** — find which segments concentrate a movement
 - **Sensitivity analysis** — elasticity coefficients showing which sub-metrics are the biggest levers for the root KPI
+- **Lever impact analysis** — scenario-style estimates for how +1%, +5%, or +10% changes in a sub-metric would move the root KPI
 
 **Match suggestions to tree structure:**
 - Trees with children/sub-metrics → suggest root cause analysis
@@ -39,6 +40,13 @@ tree for the latest period and present real findings rather than listing feature
 **IMPORTANT: Always start with `/qluent:investigate`.** Do NOT manually chain `trend`,
 `rca`, or `compare` as your first step. The `investigate` command bundles all of these
 into a single call. Running individual commands is slower and misses agent-level analysis.
+
+For elasticity, leverage, impact, scenario, or "what if" follow-ups:
+- Read the structured `investigate` JSON first, especially `levers`, `evaluation`, and `agent.recommended_next_steps`
+- Reuse the exact current/comparison windows from the last investigation
+- If the embedded `levers` block is not enough, run `qluent trees levers <tree_id> --current <same>:<same> --compare <same>:<same> --json-output`
+- Never parse tool-result temp files or write ad-hoc scripts against prior bash output
+- Do not rerun both JSON and non-JSON versions of the same qluent command unless JSON is genuinely insufficient
 
 ## Supported periods
 
@@ -74,7 +82,7 @@ This plugin provides purpose-built skills for common workflows. **Always use the
 
 - Charts or dashboards → `/qluent:visualize` (never write custom HTML)
 - Analysis → `/qluent:investigate` (never manually chain CLI commands as a first step)
-- Follow-ups → `/qluent:trend`, `/qluent:rca`, `/qluent:compare` (not ad-hoc scripts)
+- Follow-ups → `/qluent:trend`, `/qluent:rca`, `/qluent:compare`, or `qluent trees levers` (not ad-hoc scripts)
 
 The PostToolUse hook will remind you about available skills after qluent commands complete. Follow those reminders.
 
