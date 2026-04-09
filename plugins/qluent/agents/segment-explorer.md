@@ -14,23 +14,21 @@ Given a tree and the top contributing node(s) from an RCA, explore the segment-l
 
 ## Analysis steps
 
-1. **Validate dimensions exist**: Run `qluent trees validate <tree> --json-output` and check that the target node projects its declared dimensions. If the requested cut is missing, do not stop there — find the closest companion tree that exposes that dimension and keep the same windows.
+1. **Run segment RCA**: Run `qluent rca analyze <tree> --period "<period>" --json-output` and focus on the segment breakdowns for the top driver nodes.
 
-2. **Run segment RCA**: Run `qluent rca analyze <tree> --period "<period>" --json-output` and focus on the segment breakdowns for the top driver nodes.
+2. **Pivot if the cut is unsupported**: If the current tree does not expose the requested dimension, switch to the closest companion tree that does and keep the same windows.
 
-3. **Identify concentration**: Is the movement concentrated in one segment (e.g., one region, one product category) or distributed across many?
+3. **Use server-provided analysis**: The response includes segment concentration flags, contribution shares, and data quality indicators. Report these to the user.
 
-4. **Quantify**: For the top 3 segments, report their contribution share and absolute delta.
+4. **Quantify**: For the top segments, report their contribution share and absolute delta.
 
-5. **Cross-check**: If a single segment drives >70% of a node's movement, flag it as a concentration risk and suggest the user investigate that segment specifically.
-6. **Fallback synthesis**: When you had to pivot to another tree for the requested dimension, say which tree provided the segment view and which tree provided the KPI-specific view.
+5. **Fallback synthesis**: When you had to pivot to another tree for the requested dimension, say which tree provided the segment view and which tree provided the KPI-specific view.
 
 ## Output format
 
 - **Node analyzed**: which metric node you drilled into
-- **Segment concentration**: high (>70% one segment) / moderate / distributed
 - **Top segments**: ranked list with contribution shares
-- **Data quality**: note any missing dimensions or validation warnings
+- **Data quality**: note any validation warnings from the server response
 - **Recommendation**: what to look at next
 
 Keep output factual and concise.
