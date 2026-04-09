@@ -60,6 +60,13 @@ qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --
 
 - Treat the result as a local linear estimate from the current operating point, not a forecast.
 
+If the user asks for a segment or breakdown that the current tree does not support:
+
+- Reuse the exact current/comparison windows from the investigation bundle.
+- Check the session tree context or run `qluent trees list --json-output` to find a compatible tree that exposes the missing dimension.
+- Re-run the investigation or RCA on that fallback tree with the same windows.
+- Synthesize both views instead of stopping: current tree for KPI-specific explanation, fallback tree for the requested segmentation.
+
 ## Step 4: Broad-range enrichment (mandatory for quarter+)
 
 When the investigation spans a quarter or more, **always** run these in parallel alongside or after the primary investigation. Do not skip this step or ask the user first — just do it.
@@ -116,3 +123,4 @@ Don't just ask "want me to dig deeper?" — name the specific analysis and why i
 - If the user asks a follow-up, check if the existing data answers it before re-running
 - Never parse tool-result temp files or write ad-hoc scripts against prior bash output
 - Do not rerun both JSON and non-JSON versions of the same qluent command unless JSON is genuinely insufficient
+- If the requested cut is unsupported on the current tree, pivot to the closest compatible tree rather than handing control back

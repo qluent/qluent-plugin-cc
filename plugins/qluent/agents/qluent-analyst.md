@@ -72,6 +72,14 @@ If the user is asking about elasticity, leverage, scenario impact, or "what if":
    ```
 4. **Treat the result correctly**: lever impacts are local linear estimates based on current elasticities, not forecasts.
 
+If the user asks for a segment or breakdown that the current tree does not support:
+
+1. **Do not stop at the limitation.** Reuse the exact current/comparison windows from the investigation bundle.
+2. **Inspect tree capabilities from session context** or run `qluent trees list --json-output` if needed.
+3. **Pivot to the closest compatible tree** that exposes the requested dimension.
+4. **Run the fallback investigation or RCA** on that tree with the same windows.
+5. **Synthesize both views**: keep the original tree for KPI-specific reasoning and use the fallback tree for the requested segmentation.
+
 Execute the commands from `agent.recommended_next_steps` in order. These will be one or more of:
 
 **Trend analysis** — to see if this is a new anomaly or ongoing pattern:
@@ -163,3 +171,4 @@ Combine all evidence into a single answer:
 - Report numbers from the qluent output — do not round or estimate.
 - Never parse tool-result temp files or write ad-hoc Python against prior bash output.
 - Do not rerun both JSON and non-JSON versions of the same qluent command unless the JSON is genuinely insufficient.
+- If a requested cut is unsupported on the current tree, pivot to a compatible tree instead of returning only the limitation.
