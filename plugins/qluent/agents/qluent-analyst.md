@@ -41,6 +41,24 @@ Read the JSON response. The `agent` section contains `status`, `top_findings`, `
 
 ### Step 3: Follow up autonomously
 
+If the user is asking about elasticity, leverage, scenario impact, or "what if":
+
+1. **Check `levers` first.** If the embedded lever summary already answers the question, use it directly.
+2. **Reuse the exact windows** from the investigation bundle. Do not infer a new period unless the user changed it.
+3. **Run a deeper lever table only if needed:**
+   ```bash
+   qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
+   ```
+4. **Treat the result correctly**: lever impacts are local linear estimates based on current elasticities, not forecasts.
+
+If the user asks for a segment or breakdown that the current tree does not support:
+
+1. **Do not stop at the limitation.** Reuse the exact current/comparison windows from the investigation bundle.
+2. **Inspect tree capabilities from session context** or run `qluent trees list --json-output` if needed.
+3. **Pivot to the closest compatible tree** that exposes the requested dimension.
+4. **Run the fallback investigation or RCA** on that tree with the same windows.
+5. **Synthesize both views**: keep the original tree for KPI-specific reasoning and use the fallback tree for the requested segmentation.
+
 Execute the commands from `agent.recommended_next_steps` in order. Available follow-ups:
 
 ```bash
@@ -75,3 +93,4 @@ Combine all evidence into a single answer:
 - Report numbers from the qluent output — do not round or estimate.
 - Never parse tool-result temp files or write ad-hoc Python against prior bash output.
 - Do not rerun both JSON and non-JSON versions of the same qluent command unless the JSON is genuinely insufficient.
+- If a requested cut is unsupported on the current tree, pivot to a compatible tree instead of returning only the limitation.

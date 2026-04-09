@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+python_bin=/usr/bin/python3
+if [ ! -x "$python_bin" ]; then
+  python_bin=$(command -v python3)
+fi
+
 # Check if qluent is available
 if ! command -v qluent &>/dev/null; then
   cat <<'EOF'
@@ -22,8 +27,11 @@ EOF
 fi
 
 # Extract tree metadata for context injection
-context=$(echo "$output" | python3 -c "
+catalog_file=/tmp/qluent-tree-capabilities.json
+
+context=$(echo "$output" | QLUENT_TREE_CATALOG=\"$catalog_file\" \"$python_bin\" -c "
 import sys, json
+import os
 
 try:
     data = json.load(sys.stdin)
@@ -37,6 +45,7 @@ if not raw:
 def norm(t):
     return {
         'id': t.get('id', t.get('tree_id', 'unknown')),
+        'label': t.get('label', t.get('tree_label', t.get('id', t.get('tree_id', 'unknown')))),
         'root': t.get('root_metric', t.get('root', '')),
         'desc': t.get('description', t.get('label', '')),
         'dims': t.get('dimensions', []),
@@ -45,6 +54,14 @@ def norm(t):
 
 trees = [norm(t) for t in raw]
 count = len(trees)
+catalog_path = os.environ.get('QLUENT_TREE_CATALOG')
+
+if catalog_path:
+    try:
+        with open(catalog_path, 'w', encoding='utf-8') as fh:
+            json.dump({'trees': trees}, fh)
+    except Exception:
+        pass
 
 print(f'[Qluent] {count} metric tree{\"s\" if count != 1 else \"\"} available for analysis:')
 print()
@@ -64,6 +81,9 @@ for t in trees:
     if meta:
         line += '  (' + ' | '.join(meta) + ')'
     print(line)
+print()
+print('Fallback rule: if a requested cut is unavailable on the chosen tree, keep the same windows and pivot to the closest tree that lists that dimension.')
+print('Combine the original tree for KPI-specific explanation with the fallback tree for segmentation instead of stopping at the limitation.')
 print()
 print('Ask a business performance question or use /qluent:investigate to start.')
 " 2>/dev/null) || context=""

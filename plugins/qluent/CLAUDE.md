@@ -48,6 +48,12 @@ For elasticity, leverage, impact, scenario, or "what if" follow-ups:
 - Never parse tool-result temp files or write ad-hoc scripts against prior bash output
 - Do not rerun both JSON and non-JSON versions of the same qluent command unless JSON is genuinely insufficient
 
+For unsupported segment cuts or breakdown requests:
+- If the chosen tree does not expose the requested dimension, do not stop at that limitation
+- Reuse the exact current/comparison windows and pivot to the closest tree that lists the missing dimension
+- Use the original tree for KPI-specific reasoning and the fallback tree for the requested segmentation
+- If no single tree supports every requested cut, combine the closest compatible views and state the boundary explicitly
+
 ## Supported periods
 
 "last week", "this week", "last month", "this month", "last quarter",

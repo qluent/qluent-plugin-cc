@@ -38,6 +38,25 @@ For complex cases, the server may recommend launching specialized agents (`trend
 
 ## Step 3: Summarize and suggest next steps
 
+If the user is asking about elasticity, leverage, scenario impact, or "what if":
+
+- Read `levers` first before running anything else.
+- Reuse the exact current/comparison windows from the investigation bundle.
+- If you need a deeper scenario table, run:
+
+```bash
+qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
+```
+
+- Treat the result as a local linear estimate from the current operating point, not a forecast.
+
+If the user asks for a segment or breakdown that the current tree does not support:
+
+- Reuse the exact current/comparison windows from the investigation bundle.
+- Check the session tree context or run `qluent trees list --json-output` to find a compatible tree that exposes the missing dimension.
+- Re-run the investigation or RCA on that fallback tree with the same windows.
+- Synthesize both views instead of stopping: current tree for KPI-specific explanation, fallback tree for the requested segmentation.
+
 - Lead with the top findings from the server response
 - Report the exact current and comparison windows used
 - End with 2-3 concrete follow-up suggestions tailored to what the data shows
@@ -50,3 +69,4 @@ For complex cases, the server may recommend launching specialized agents (`trend
 - If the user asks a follow-up, check if the existing data answers it before re-running
 - Never parse tool-result temp files or write ad-hoc scripts against prior bash output
 - Do not rerun both JSON and non-JSON versions of the same qluent command unless JSON is genuinely insufficient
+- If the requested cut is unsupported on the current tree, pivot to the closest compatible tree rather than handing control back
