@@ -52,6 +52,7 @@ Read the JSON response in this order:
 2. `agent.top_findings` — fastest summary
 3. `agent.gaps` — what evidence is missing
 4. `agent.recommended_next_steps` — follow these exactly
+5. `levers` — embedded elasticity / lever summary when available
 
 Act on `agent.status`:
 
@@ -60,6 +61,16 @@ Act on `agent.status`:
 - **`needs_more_data`** or **`partially_resolved`**: Continue to Step 3.
 
 ### Step 3: Follow up autonomously
+
+If the user is asking about elasticity, leverage, scenario impact, or "what if":
+
+1. **Check `levers` first.** If the embedded lever summary already answers the question, use it directly.
+2. **Reuse the exact windows** from the investigation bundle. Do not infer a new period unless the user changed it.
+3. **Run a deeper lever table only if needed:**
+   ```bash
+   qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
+   ```
+4. **Treat the result correctly**: lever impacts are local linear estimates based on current elasticities, not forecasts.
 
 Execute the commands from `agent.recommended_next_steps` in order. These will be one or more of:
 
@@ -85,6 +96,12 @@ qluent rca analyze <tree_id> --current <start>:<end> --compare <start>:<end> --j
 
 ```bash
 qluent trees compare <tree1> <tree2> --period "<period>" --json-output
+```
+
+**Lever impact analysis** — to quantify forward-looking impact from elasticities:
+
+```bash
+qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
 ```
 
 Run up to 3 follow-up commands. After each, check if the question is now answerable.
@@ -125,7 +142,7 @@ Combine all evidence into a single answer:
 
 1. **Lead with the answer** — what changed and why, in one sentence.
 2. **Supporting evidence** — Shapley attribution (which sub-metrics drove the change), trend context (new vs ongoing), mechanism (volume vs mix vs rate).
-3. **Elasticity insight** — if evaluation nodes include `elasticity` values, highlight which sub-metrics are the biggest levers (ε > 1 = elastic, high-leverage). Use this to inform forward-looking recommendations.
+3. **Elasticity insight** — if `levers` or evaluation nodes include `elasticity`, highlight which sub-metrics are the biggest levers (ε > 1 = elastic, high-leverage). If a lever table is available, quantify the scenario impact explicitly.
 4. **Confidence** — report the evidence coverage score and what evidence types are present or missing. Never describe this as a probability.
 5. **Windows** — always state the exact current and comparison date ranges used.
 6. **Proactive follow-ups** — always end with 2-3 concrete next steps tailored to what the data shows. Don't offer generic "want me to dig deeper?" — name the specific analysis and why it's interesting. Examples:
@@ -137,9 +154,12 @@ Combine all evidence into a single answer:
 ## Rules
 
 - Always use `--json-output` for all qluent commands.
+- Prefer the embedded `investigate.levers` block before rerunning commands for impact questions.
 - Follow `agent.recommended_next_steps` before inventing your own drill-down.
 - Do not run more than 6 total qluent commands per question (the broad-range enrichment step may require 3-4 commands on its own).
 - If RCA times out on large date ranges, suggest quarterly breakdowns.
 - Use the qluent-interpretation skill for Shapley values, trend labels, and confidence scores.
 - Do not speculate beyond what the data shows. If the evidence is partial, say so.
 - Report numbers from the qluent output — do not round or estimate.
+- Never parse tool-result temp files or write ad-hoc Python against prior bash output.
+- Do not rerun both JSON and non-JSON versions of the same qluent command unless the JSON is genuinely insufficient.

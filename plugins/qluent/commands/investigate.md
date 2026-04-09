@@ -38,14 +38,27 @@ Read the investigation bundle in this order:
 2. `agent.top_findings` — fastest summary
 3. `agent.gaps` — what evidence is missing
 4. `agent.recommended_next_steps` — follow these before inventing your own drill-down
-5. `evaluation`, `trend`, `root_cause` — detailed evidence
-6. `evaluation.nodes[].sensitivity` and `elasticity` — which sub-metrics are the biggest levers (ε > 1 = elastic, high-leverage for the root KPI)
+5. `levers` — embedded elasticity / lever summary when available
+6. `evaluation`, `trend`, `root_cause` — detailed evidence
+7. `evaluation.nodes[].sensitivity` and `elasticity` — which sub-metrics are the biggest levers (ε > 1 = elastic, high-leverage for the root KPI)
 
 ## Step 3: Act on agent.status
 
 - **`resolved`**: Continue to Step 4 (broad-range enrichment) if the time range is quarter+, otherwise go to Step 6 (summarize).
 - **`needs_tree_selection`**: Inspect `match.top_candidates`, pick the strongest tree (or ask the user), and re-run with the explicit tree_id.
 - **`needs_more_data`** or **`partially_resolved`**: Run the first relevant command from `agent.recommended_next_steps`. Do NOT invent your own drill-down until you've exhausted the recommended steps.
+
+If the user is asking about elasticity, leverage, scenario impact, or "what if":
+
+- Read `levers` first before running anything else.
+- Reuse the exact current/comparison windows from the investigation bundle.
+- If you need a deeper scenario table, run:
+
+```bash
+qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
+```
+
+- Treat the result as a local linear estimate from the current operating point, not a forecast.
 
 ## Step 4: Broad-range enrichment (mandatory for quarter+)
 
@@ -101,3 +114,5 @@ Don't just ask "want me to dig deeper?" — name the specific analysis and why i
 - Always use `--json-output` when driving the workflow
 - For full-year date ranges, if RCA times out, suggest quarterly breakdowns
 - If the user asks a follow-up, check if the existing data answers it before re-running
+- Never parse tool-result temp files or write ad-hoc scripts against prior bash output
+- Do not rerun both JSON and non-JSON versions of the same qluent command unless JSON is genuinely insufficient
