@@ -35,6 +35,24 @@ Key properties:
 - Use `evidence_types_present`, `evidence_types_missing`, and `confidence_factors` to explain why the score is high, medium, or low
 - Never describe `80%` as "80% likely to be true." Describe it as an evidence or coverage score
 
+## Sensitivity and elasticity
+
+Evaluation nodes now include `sensitivity` and `elasticity` fields (when available from the backend).
+
+**Sensitivity** (`sensitivity`) = d(root)/d(node). The partial derivative of the root metric with respect to this node. Answers: "if this node increases by 1 unit, the root changes by this many units."
+
+**Elasticity** (`elasticity`, shown as `ε` in CLI output) = (sensitivity * node_value) / root_value. Answers: "a 1% change in this node causes this % change in the root."
+
+Interpreting elasticity:
+- **ε > 1** (elastic): the root is more than proportionally sensitive to this node — high-leverage driver
+- **ε = 1** (unit-elastic): proportional relationship — common for multiplicative formulas like `revenue = orders * aov`
+- **ε < 1** (inelastic): the root is less sensitive to this node — changes here have muted impact
+- **ε = n/a**: root value is zero, elasticity is undefined
+
+Use elasticity to prioritize which sub-metrics to focus on. A node with high elasticity is a bigger lever for improving the root metric than one with low elasticity, regardless of their current absolute values.
+
+Elasticity complements Shapley attribution: Shapley explains *what caused* a past change, elasticity indicates *what would matter most* for future changes.
+
 ## Synthesis pattern
 
-Combine evidence across steps: trend observation (direction + anomaly) + Shapley attribution (which sub-metric drove it) + mechanism validation (volume vs mix shift via `/qluent:compare`) = conclusion with actionable takeaway.
+Combine evidence across steps: trend observation (direction + anomaly) + Shapley attribution (which sub-metric drove it) + mechanism validation (volume vs mix shift via `/qluent:compare`) + elasticity (which levers matter most going forward) = conclusion with actionable takeaway.

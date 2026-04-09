@@ -16,6 +16,7 @@ segment dimensions — use that context to tailor suggestions.
 - **Trend analysis** — multi-period tracking with anomaly detection
 - **Tree comparison** — side-by-side mechanism validation (volume vs mix vs rate shifts)
 - **Segment drill-down** — find which segments concentrate a movement
+- **Sensitivity analysis** — elasticity coefficients showing which sub-metrics are the biggest levers for the root KPI
 
 **Match suggestions to tree structure:**
 - Trees with children/sub-metrics → suggest root cause analysis

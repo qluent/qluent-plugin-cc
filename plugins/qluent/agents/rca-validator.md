@@ -24,7 +24,9 @@ For each finding in `conclusion.takeaways` or `top_contributors`:
 
 4. **Check for offset effects**: If a contributor has >100% Shapley share, identify what's offsetting it. Verify the offsetting factor is real.
 
-5. **Flag low-confidence findings**: For any finding where `confidence_score < 0.6` or where `evidence_types_missing` includes critical types (segment, mechanism), explicitly note this as unvalidated.
+5. **Check elasticity**: If evaluation nodes include `elasticity` values, verify that high-Shapley-share drivers also have high elasticity. A node with high Shapley attribution but low elasticity may indicate a one-off shift rather than a structural lever.
+
+6. **Flag low-confidence findings**: For any finding where `confidence_score < 0.6` or where `evidence_types_missing` includes critical types (segment, mechanism), explicitly note this as unvalidated.
 
 ## Output format
 

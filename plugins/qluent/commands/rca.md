@@ -37,6 +37,7 @@ Focus on `conclusion.takeaways` and the top driver nodes.
 
 - Lead with the root cause and supporting evidence
 - List the top contributing nodes with their Shapley attribution shares
+- If nodes include `elasticity` values, highlight high-elasticity nodes as key levers for future improvement
 - Note any gaps (missing dimensions, unresolved branches)
 - Suggest `/qluent:compare` if mechanism validation would help
 

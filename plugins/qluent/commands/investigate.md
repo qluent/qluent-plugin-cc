@@ -39,6 +39,7 @@ Read the investigation bundle in this order:
 3. `agent.gaps` — what evidence is missing
 4. `agent.recommended_next_steps` — follow these before inventing your own drill-down
 5. `evaluation`, `trend`, `root_cause` — detailed evidence
+6. `evaluation.nodes[].sensitivity` and `elasticity` — which sub-metrics are the biggest levers (ε > 1 = elastic, high-leverage for the root KPI)
 
 ## Step 3: Act on agent.status
 

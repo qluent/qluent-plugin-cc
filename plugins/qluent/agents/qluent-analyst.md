@@ -125,13 +125,14 @@ Combine all evidence into a single answer:
 
 1. **Lead with the answer** — what changed and why, in one sentence.
 2. **Supporting evidence** — Shapley attribution (which sub-metrics drove the change), trend context (new vs ongoing), mechanism (volume vs mix vs rate).
-3. **Confidence** — report the evidence coverage score and what evidence types are present or missing. Never describe this as a probability.
-4. **Windows** — always state the exact current and comparison date ranges used.
-5. **Proactive follow-ups** — always end with 2-3 concrete next steps tailored to what the data shows. Don't offer generic "want me to dig deeper?" — name the specific analysis and why it's interesting. Examples:
+3. **Elasticity insight** — if evaluation nodes include `elasticity` values, highlight which sub-metrics are the biggest levers (ε > 1 = elastic, high-leverage). Use this to inform forward-looking recommendations.
+4. **Confidence** — report the evidence coverage score and what evidence types are present or missing. Never describe this as a probability.
+5. **Windows** — always state the exact current and comparison date ranges used.
+6. **Proactive follow-ups** — always end with 2-3 concrete next steps tailored to what the data shows. Don't offer generic "want me to dig deeper?" — name the specific analysis and why it's interesting. Examples:
    - If a category underperformed: "Bottoms declined 2.1% — want me to break it down monthly to find where the gap opened?"
    - If volume vs value diverged: "Revenue grew on flat orders — want a channel-by-channel AOV comparison?"
    - If there's rich data to chart: "I can visualize this as an interactive dashboard with category trends, share shifts, and seasonality — want me to build that?"
-6. **Gaps** — if anything is unresolved, say so explicitly.
+7. **Gaps** — if anything is unresolved, say so explicitly.
 
 ## Rules
 

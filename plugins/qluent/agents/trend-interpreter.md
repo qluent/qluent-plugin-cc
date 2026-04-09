@@ -24,6 +24,8 @@ Run `qluent trees trend` for the given tree and parameters, then analyze the out
 
 5. **Channel decomposition**: For each anomalous period, identify which sub-metrics drove the movement using the top_contributors data.
 
+6. **Elasticity context**: If evaluation nodes include `elasticity` values, note which sub-metrics have the highest elasticity — these are the biggest levers and anomalies in high-elasticity nodes are more impactful.
+
 ## Output format
 
 Return a structured summary:
