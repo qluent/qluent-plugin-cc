@@ -50,6 +50,7 @@ If the user is asking about elasticity, leverage, scenario impact, or "what if":
    qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
    ```
 4. **Treat the result correctly**: lever impacts are local linear estimates based on current elasticities, not forecasts.
+5. **Apply elasticity guardrails**: label the evidence type, report materiality/confidence/guardrail warnings, and turn weak or incomplete evidence into the next drill or validation test instead of an action recommendation.
 
 If the user asks for a segment or breakdown that the current tree does not support:
 
@@ -87,6 +88,7 @@ Combine all evidence into a single answer:
 
 - Always use `--json-output` for all qluent commands.
 - Prefer the embedded `investigate.levers` block before rerunning commands for impact questions.
+- For elasticity or lever answers, recommendations require sufficient materiality, evidence coverage, and clean guardrail metrics from the returned result.
 - Follow `agent.recommended_next_steps` before inventing your own drill-down.
 - If RCA times out on large date ranges, suggest quarterly breakdowns.
 - Do not speculate beyond what the data shows. If the evidence is partial, say so.

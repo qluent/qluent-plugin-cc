@@ -45,6 +45,9 @@ For elasticity, leverage, impact, scenario, or "what if" follow-ups:
 - Read the structured `investigate` JSON first, especially `levers`, `evaluation`, and `agent.recommended_next_steps`
 - Reuse the exact current/comparison windows from the last investigation
 - If the embedded `levers` block is not enough, run `qluent trees levers <tree_id> --current <same>:<same> --compare <same>:<same> --json-output`
+- Label elasticity evidence as directional sensitivity unless the response explicitly supports causal language
+- Recommend lever changes only when materiality, confidence/evidence coverage, and guardrail metrics are sufficient in the returned result
+- When evidence is weak, suggest the next drill, comparison, or validation test instead of an action plan
 - Never parse tool-result temp files or write ad-hoc scripts against prior bash output
 - Do not rerun both JSON and non-JSON versions of the same qluent command unless JSON is genuinely insufficient
 
