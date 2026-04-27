@@ -1,12 +1,14 @@
 ---
 description: Investigate metric, KPI, or business performance changes (revenue, cost, conversion, sales, ROAS) using deterministic analysis
-argument-hint: "[question or tree-name] [--period 'last week' | --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD]"
-allowed-tools: Bash(qluent *)
+argument-hint: "[question or tree-id] [--period 'last week' | --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD]"
+allowed-tools: Bash(qluent *), Read
 ---
 
 # Investigate KPI movement
 
 This is the primary entry point for all metric analysis. It bundles validation, trend, evaluation, and root cause analysis into a single call.
+
+The qluent server is deterministic — it does NOT match natural-language questions to trees. YOU pick which tree to analyze when the user asks a question, by listing trees and matching against their metadata.
 
 ## Deterministic query contract
 
@@ -18,39 +20,53 @@ This is the primary entry point for all metric analysis. It bundles validation, 
 - Separate facts, interpretation, caveats, and recommendations in the answer.
 - Do not invent, back-calculate, or estimate metric math that is not present in the returned qluent JSON.
 
-## Step 1: Resolve the tree
+## Step 1: Decide whether `$ARGUMENTS` is a tree id or a question
 
-If the user asked a natural-language question, run:
+If `$ARGUMENTS` is empty, ends with `?`, contains spaces, or contains words like `why`, `what`, `how`, `drove`, `drop`, `spike`, treat it as a **question** and go to Step 2.
+
+If `$ARGUMENTS` is a single token (e.g. `revenue`, `order_volume`, `roas`), treat it as a **tree id** and skip to Step 3.
+
+## Step 2: List the available trees and pick the best fit
+
+Run:
 
 ```bash
 qluent trees list --json-output
 ```
 
-Pick the tree by matching the user's question against each tree's `id`, `label`, `description`, declared `dimensions`, and child node labels. If no tree is a clear fit, ask the user to choose from the top candidates. Pass the chosen tree id explicitly in Step 2.
+Read each tree's `id`, `label`, `description`, declared `dimensions`, and the labels of its child nodes. Match the user's question against this metadata. Bias toward:
 
-## Step 2: Run the investigation
+- nouns in the question that match a tree label (e.g. "revenue" → revenue tree)
+- verbs/concepts that match a child node label (e.g. "spend efficiency" → a roas-style node)
+- dimensions named in the question (e.g. "by country" → tree that declares `country`)
+
+If no tree is a clear winner, ask the user with `AskUserQuestion`, listing the top 2–3 candidates with their labels and descriptions. Do NOT guess silently.
+
+## Step 3: Resolve the time windows
+
+If the user provided `--current` / `--compare`, use those verbatim. Otherwise default to `--period "last week"` (or whatever period phrase the user gave).
+
+## Step 4: Run the bundled investigation with an explicit tree id
 
 Always pipe qluent output through `tee` to save visualization data. This makes `/qluent:visualize` immediately available.
 
-For explicit date windows:
+```bash
+qluent trees investigate <tree_id> --period "<period>" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
+```
+
+For explicit date ranges:
 
 ```bash
 qluent trees investigate <tree_id> --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 ```
 
-For natural-language periods:
-
-```bash
-qluent trees investigate <tree_id> --period "last week" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
-```
-
-## Step 3: Follow server recommendations
+## Step 5: Follow server recommendations
 
 The response includes an `agent` section with `status`, `top_findings`, `gaps`, and `recommended_next_steps`. The `levers` section contains embedded elasticity/lever data when available. Follow the server's recommendations to determine what to do next — run the suggested follow-up commands before inventing your own.
 
 For complex cases, the server may recommend launching specialized agents (`trend-interpreter`, `rca-validator`, `segment-explorer`) in parallel.
 
-## Step 4: Summarize and suggest next steps
+## Step 6: Summarize and suggest next steps
 
 If the user is asking about elasticity, leverage, scenario impact, or "what if":
 
@@ -77,13 +93,13 @@ If the user asks for a segment or breakdown that the current tree does not suppo
 
 ## Rules
 
-- Always pass an explicit `<tree_id>` to `investigate`, chosen client-side from `qluent trees list --json-output` when needed
-- Always use `--json-output` when driving the workflow
-- Require deterministic query output before every quantitative claim
-- Cite result provenance for material findings
-- Prefer the embedded `levers` block before rerunning commands for impact questions
-- For full-year date ranges, if RCA times out, suggest quarterly breakdowns
-- If the user asks a follow-up, check if the existing data answers it before re-running
-- Never parse tool-result temp files or write ad-hoc scripts against prior bash output
-- Do not rerun both JSON and non-JSON versions of the same qluent command unless JSON is genuinely insufficient
-- If the requested cut is unsupported on the current tree, pivot to the closest compatible tree rather than handing control back
+- Always pass an explicit `<tree_id>` to `investigate`, chosen client-side via Step 2 (`qluent trees list --json-output`).
+- Always use `--json-output` when driving the workflow.
+- Require deterministic query output before every quantitative claim.
+- Cite result provenance for material findings.
+- Prefer the embedded `levers` block before rerunning commands for impact questions.
+- For full-year date ranges, if RCA times out, suggest quarterly breakdowns.
+- If the user asks a follow-up, check if the existing data answers it before re-running.
+- Never parse tool-result temp files or write ad-hoc scripts against prior bash output.
+- Do not rerun both JSON and non-JSON versions of the same qluent command unless JSON is genuinely insufficient.
+- If the requested cut is unsupported on the current tree, pivot to the closest compatible tree rather than handing control back.
