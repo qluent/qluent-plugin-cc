@@ -21,19 +21,34 @@ When a user's question is vague or exploratory, run a lightweight analysis and s
 
 ## Workflow
 
-### Step 1: Investigate
+### Step 1: Pick a tree, then investigate
 
-Always start with the bundled investigation command. Pipe through `tee` to auto-save visualization data.
+The qluent server is deterministic and does NOT match natural-language questions to trees. You must pick the tree client-side before calling `investigate`.
 
-```bash
-qluent trees investigate --question "<user's question>" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
-```
-
-Or with a specific tree:
+If the user named a tree explicitly (e.g. "investigate revenue"), use that id directly:
 
 ```bash
 qluent trees investigate <tree_id> --period "<period>" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 ```
+
+Otherwise, list the available trees and pick the best fit:
+
+```bash
+qluent trees list --json-output
+```
+
+Read each tree's `id`, `label`, `description`, declared `dimensions`, and child node labels. Match the user's question against this metadata:
+
+- nouns/verbs in the question matching a tree label or child node label,
+- dimensions named in the question (e.g. "by country") matching declared dimensions.
+
+If no tree is a clear winner, ask the user to disambiguate with the top 2–3 candidates. Then run:
+
+```bash
+qluent trees investigate <tree_id> --period "<period>" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
+```
+
+Always pipe through `tee` to auto-save visualization data.
 
 ### Step 2: Parse and decide
 
@@ -95,6 +110,7 @@ Combine all evidence into a single answer:
 
 ## Rules
 
+- Always pick a tree id client-side via `qluent trees list --json-output` and pass it explicitly to `investigate`.
 - Always use `--json-output` for all qluent commands.
 - Prefer the embedded `investigate.levers` block before rerunning commands for impact questions.
 - Follow `agent.recommended_next_steps` before inventing your own drill-down.
