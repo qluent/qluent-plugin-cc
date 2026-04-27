@@ -9,7 +9,7 @@ jq_bin=$(command -v jq || true)
 [ -n "$jq_bin" ] || exit 0
 
 # Extract the command from TOOL_INPUT (JSON with a "command" field)
-command=$(printf '%s' "$TOOL_INPUT" | "$jq_bin" -r '.command // empty' 2>/dev/null) || exit 0
+command=$(printf '%s' "${TOOL_INPUT:-}" | "$jq_bin" -r '.command // empty' 2>/dev/null) || exit 0
 [ -n "$command" ] || exit 0
 
 # Only act on qluent CLI commands
@@ -113,17 +113,21 @@ build_fallback_guidance() {
     fi
   done < <("$jq_bin" -r '[.warnings[]?, .root_cause.warnings[]?] | .[]?' "$viz_path")
 
-  for dim in "${requested_dims[@]}"; do
-    if ! array_contains "$dim" "${supported_dims[@]-}" && ! array_contains "$dim" "${unsupported_dims[@]-}"; then
-      unsupported_dims+=("$dim")
-    fi
-  done
+  if [ ${#requested_dims[@]} -gt 0 ]; then
+    for dim in "${requested_dims[@]}"; do
+      if ! array_contains "$dim" "${supported_dims[@]+"${supported_dims[@]}"}" && ! array_contains "$dim" "${unsupported_dims[@]+"${unsupported_dims[@]}"}"; then
+        unsupported_dims+=("$dim")
+      fi
+    done
+  fi
 
-  for dim in "${warning_dims[@]}"; do
-    if ! array_contains "$dim" "${unsupported_dims[@]-}"; then
-      unsupported_dims+=("$dim")
-    fi
-  done
+  if [ ${#warning_dims[@]} -gt 0 ]; then
+    for dim in "${warning_dims[@]}"; do
+      if ! array_contains "$dim" "${unsupported_dims[@]+"${unsupported_dims[@]}"}"; then
+        unsupported_dims+=("$dim")
+      fi
+    done
+  fi
 
   [ ${#unsupported_dims[@]} -gt 0 ] || return 0
 

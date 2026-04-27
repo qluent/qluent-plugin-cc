@@ -6,8 +6,10 @@ set -euo pipefail
 
 python_bin=/usr/bin/python3
 if [ ! -x "$python_bin" ]; then
-  python_bin=$(command -v python3)
+  python_bin=$(command -v python3 || true)
 fi
+
+[ -n "$python_bin" ] || exit 0
 
 # Check if qluent is available
 if ! command -v qluent &>/dev/null; then
@@ -18,8 +20,7 @@ EOF
 fi
 
 # Try to list trees — reports setup needed on auth/config failure
-output=$(qluent trees list --json-output 2>/dev/null)
-if [ $? -ne 0 ]; then
+if ! output=$(qluent trees list --json-output 2>/dev/null); then
   cat <<'EOF'
 [Qluent] CLI is installed but not configured. Run /qluent:setup to authenticate and connect to your project.
 EOF
@@ -29,7 +30,7 @@ fi
 # Extract tree metadata for context injection
 catalog_file=/tmp/qluent-tree-capabilities.json
 
-context=$(echo "$output" | QLUENT_TREE_CATALOG=\"$catalog_file\" \"$python_bin\" -c "
+context=$(printf '%s' "$output" | QLUENT_TREE_CATALOG="$catalog_file" "$python_bin" -c "
 import sys, json
 import os
 
