@@ -41,6 +41,16 @@ Read the JSON response. The `agent` section contains `status`, `top_findings`, `
 
 ### Step 3: Follow up autonomously
 
+For RCA-style "why did this move?" questions:
+
+1. Start from the mapped root metric and the exact windows used by `/qluent:investigate`.
+2. Inspect root movement first, then use returned RCA fields to decompose child drivers.
+3. Rank drivers by returned materiality, attribution, and confidence/evidence coverage.
+4. Drill only the material branches that can change the answer. Avoid exhaustive low-value probing of every child node.
+5. Segment material drivers when dimensions are available; if the requested cut is unsupported, pivot to the closest compatible companion tree and keep the same windows.
+6. Separate mix effects from behavior/rate effects when the returned tree structure or comparison output supports that distinction.
+7. End with ranked next-best drills. Weak or incomplete evidence should become a drill, validation, or comparison suggestion, not an action recommendation.
+
 If the user is asking about elasticity, leverage, scenario impact, or "what if":
 
 1. **Check `levers` first.** If the embedded lever summary already answers the question, use it directly.
@@ -88,6 +98,8 @@ Combine all evidence into a single answer:
 - Always use `--json-output` for all qluent commands.
 - Prefer the embedded `investigate.levers` block before rerunning commands for impact questions.
 - Follow `agent.recommended_next_steps` before inventing your own drill-down.
+- Prefer material, confidence-supported branches for RCA follow-up; do not drill every branch just because data exists.
+- Recommendations require sufficient materiality and confidence. Otherwise, recommend the next best drill or validation test.
 - If RCA times out on large date ranges, suggest quarterly breakdowns.
 - Do not speculate beyond what the data shows. If the evidence is partial, say so.
 - Report numbers from the qluent output — do not round or estimate.
