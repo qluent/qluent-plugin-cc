@@ -9,6 +9,8 @@ disable-model-invocation: true
 
 Use this as a follow-up after `/qluent:investigate`, not as a starting point.
 
+If `$ARGUMENTS` looks like a question rather than a tree id, run `qluent trees list --json-output`, pick the best-fitting tree from the list (match against tree label, child node labels, and declared dimensions), and re-run with that tree id.
+
 Parse the arguments from `$ARGUMENTS` and run:
 
 ```bash
