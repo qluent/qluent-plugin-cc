@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qluent Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #f8f9fb;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  /* Top bar */
+  .topbar {
+    background: #fff;
+    border-bottom: 1px solid #e8e8ef;
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .topbar .logo {
+    display: flex;
+    align-items: center;
+  }
+  .topbar .logo svg {
+    height: 20px;
+    width: auto;
+  }
+  .topbar .sep {
+    color: #d1d1db;
+    font-weight: 300;
+  }
+  .topbar .page-title {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  /* Main content */
+  .main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 28px;
+  }
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .header .period {
+    font-size: 0.85rem;
+    color: #9ca3af;
+  }
+
+  /* KPI row */
+  .kpi-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 8px;
+    padding: 16px 20px;
+    flex: 1;
+    min-width: 150px;
+  }
+  .kpi-card .kpi-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+  .kpi-card .kpi-delta {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .kpi-card .kpi-label {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .delta-positive { color: #22c55e; }
+  .delta-negative { color: #ef4444; }
+  .delta-neutral { color: #9ca3af; }
+
+  /* Chart cards */
+  .card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 2px;
+  }
+  .card .sub {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-bottom: 16px;
+  }
+  .chart-container {
+    position: relative;
+    width: 100%;
+    max-height: 340px;
+  }
+  canvas { max-height: 320px; }
+
+  /* Agent findings */
+  .findings-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .findings-card h2 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 12px;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .status-resolved { background: #dcfce7; color: #16a34a; }
+  .status-needs_more_data, .status-partially_resolved { background: #fef3c7; color: #d97706; }
+  .status-needs_tree_selection { background: #eef0fe; color: #6664F4; }
+
+  .finding-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.82rem;
+    color: #374151;
+    line-height: 1.5;
+  }
+  .finding-item:last-child { border-bottom: none; }
+
+  details summary {
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #9ca3af;
+    padding: 8px 0 4px;
+  }
+  details summary:hover { color: #6b7280; }
+  .gap-item {
+    padding: 4px 0;
+    font-size: 0.78rem;
+    color: #d97706;
+  }
+  .gap-item::before { content: '\26A0 '; }
+  .next-step {
+    padding: 10px 12px;
+    margin-top: 6px;
+    background: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 8px;
+  }
+  .next-step .step-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+  .next-step .step-why {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 2px;
+  }
+  .section-heading {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin: 12px 0 6px;
+  }
+  .next-step code {
+    display: block;
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: #6664F4;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    overflow-x: auto;
+  }
+
+  /* Evidence */
+  .confidence-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .score-display {
+    font-size: 2.2rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 12px;
+  }
+  .score-high { color: #22c55e; }
+  .score-medium { color: #d97706; }
+  .score-low { color: #ef4444; }
+  .evidence-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin: 2px;
+  }
+  .evidence-present { background: #dcfce7; color: #16a34a; }
+  .evidence-missing { background: #fee2e2; color: #ef4444; }
+
+  .no-data {
+    text-align: center;
+    color: #9ca3af;
+    padding: 40px;
+    font-size: 0.9rem;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo"><svg height="20" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" viewBox="0 0 323.19 68.04" xmlns="http://www.w3.org/2000/svg"><clipPath id="af"><rect height="68.04" width="323.19" x="0" y="0"/></clipPath><g clip-path="url(#af)"><g opacity="1"><path d="M36.46 23.8c1.87-1.87 4.1-3.14 6.53-3.8 2.42-.66 4.87-.7 7.3-.04 2.42.66 4.58 1.87 6.45 3.73 1.9 1.9 3.15 4.1 3.81 6.51.66 2.41.62 4.86-.04 7.28-.66 2.41-1.94 4.57-3.85 6.47-1.9 1.9-4.07 3.25-6.42 3.99-2.34.73-4.69.8-7 .25-2.38-.55-4.4-1.68-6.16-3.44l-.29-.29-8.76-8.74c-.48-.48-.7-1.06-.74-1.76 0-.66.22-1.24.74-1.75l.25-.26 8.18-8.15Z" fill="#222"/><path d="M24.48 61.67c-1.88 1.85-4.13 3.11-6.56 3.75-2.42.64-4.88.66-7.3-.01-2.41-.68-4.57-1.9-6.42-3.78-1.89-1.92-3.12-4.12-3.76-6.54-.64-2.42-.59-4.87.09-7.28.68-2.41 1.98-4.55 3.9-6.44 1.92-1.89 4.1-3.22 6.45-3.93 2.35-.71 4.7-.77 7-.2 2.38.57 4.39 1.72 6.13 3.49l.29.3 8.69 8.81c.47.48.69 1.07.72 1.76 0 .66-.22 1.24-.74 1.75l-.26.25-8.24 8.09Z" fill="#222"/><path d="M24.48 26.96c-1.88 1.85-4.13 3.11-6.56 3.75-2.42.64-4.88.66-7.3-.02-2.41-.68-4.57-1.9-6.42-3.78C2.32 24.99 1.09 22.79.45 20.37c-.64-2.42-.59-4.87.09-7.28.68-2.41 1.98-4.56 3.9-6.44 1.92-1.89 4.1-3.22 6.45-3.93 2.35-.71 4.7-.77 7-.2 2.38.57 4.39 1.72 6.13 3.49l.29.3 8.69 8.81c.47.48.69 1.07.72 1.76 0 .66-.22 1.24-.74 1.75l-.26.25-8.24 8.09Z" fill="#6200ee"/></g><g opacity="1"><path d="M122.78 68.04l-9.61-10.37c-2.36.68-4.96 1.02-7.8 1.02-5.09 0-9.78-1.19-14.06-3.57-4.28-2.38-7.66-5.71-10.16-10-2.49-4.27-3.74-9.07-3.74-14.42 0-5.34 1.25-10.14 3.74-14.38 2.49-4.24 5.88-7.56 10.16-9.94 4.28-2.38 8.97-3.57 14.06-3.57 5.14 0 9.86 1.19 14.14 3.57 4.28 2.38 7.65 5.7 10.12 9.94 2.47 4.24 3.7 9.04 3.7 14.38 0 5.03-1.09 9.57-3.27 13.63-2.18 4.06-5.18 7.32-9.02 9.78l13.15 13.91h-11.42ZM86.63 30.72c0 4.03.8 7.58 2.4 10.65 1.6 3.06 3.82 5.42 6.65 7.07 2.84 1.65 6.07 2.47 9.69 2.47 3.62 0 6.85-.82 9.69-2.47 2.83-1.65 5.05-4.01 6.65-7.07 1.6-3.06 2.4-6.6 2.4-10.65 0-4.03-.8-7.57-2.4-10.61-1.6-3.04-3.82-5.37-6.65-6.99-2.84-1.62-6.07-2.44-9.69-2.44-3.62 0-6.85.82-9.69 2.44-2.83 1.62-5.05 3.95-6.65 6.99-1.6 3.04-2.4 6.58-2.4 10.61Z" fill="#222"/><path d="M149 0v58.14h-8.98V0H149Z" fill="#222"/><path d="M197.75 14.85v43.29h-8.98v-5.11c-1.42 1.78-3.27 3.18-5.55 4.2-2.28 1.02-4.71 1.53-7.28 1.53-3.41 0-6.47-.71-9.17-2.12-2.7-1.41-4.83-3.51-6.38-6.29-1.55-2.78-2.32-6.13-2.32-10.06V14.85h8.9v24.12c0 3.88.97 6.85 2.91 8.92 1.94 2.07 4.6 3.1 7.96 3.1 3.36 0 6.02-1.03 7.99-3.1 1.97-2.07 2.95-5.04 2.95-8.92V14.85h8.98Z" fill="#222"/><path d="M246.96 35.43c0 1.62-.1 3.09-.31 4.4H213.5c.26 3.46 1.55 6.23 3.86 8.33 2.31 2.1 5.14 3.14 8.5 3.14 4.83 0 8.24-2.02 10.24-6.05h9.69c-1.32 3.98-3.69 7.24-7.13 9.78-3.44 2.54-7.7 3.81-12.8 3.81-4.15 0-7.86-.93-11.14-2.79-3.28-1.86-5.86-4.48-7.72-7.86-1.86-3.38-2.8-7.29-2.8-11.74 0-4.45.91-8.37 2.72-11.75 1.81-3.38 4.36-5.98 7.64-7.82 3.28-1.83 7.05-2.75 11.3-2.75 4.1 0 7.74.89 10.95 2.67 3.2 1.78 5.69 4.28 7.48 7.5 1.78 3.22 2.68 6.93 2.68 11.12Zm-9.37-2.83c-.05-3.3-1.23-5.94-3.54-7.93-2.31-1.99-5.17-2.99-8.59-2.99-3.1 0-5.75.98-7.95 2.95-2.2 1.96-3.52 4.62-3.94 7.97h24.02Z" fill="#222"/><path d="M275.31 14.14c3.41 0 6.47.71 9.17 2.12 2.7 1.41 4.82 3.51 6.34 6.29 1.52 2.78 2.28 6.13 2.28 10.06v25.53h-8.9V33.94c0-3.88-.97-6.85-2.91-8.92-1.94-2.07-4.6-3.1-7.96-3.1-3.36 0-6.02 1.03-7.99 3.1-1.97 2.07-2.95 5.04-2.95 8.92v24.2h-8.98V14.85h8.98v4.95c1.47-1.78 3.35-3.17 5.63-4.16 2.28-1 4.71-1.49 7.28-1.49Z" fill="#222"/><path d="M312.64 22.16v23.96c0 1.62.38 2.79 1.14 3.5.76.71 2.06 1.06 3.9 1.06h5.51v7.46h-7.09c-4.04 0-7.14-.94-9.29-2.83-2.15-1.89-3.23-4.95-3.23-9.19V22.16h-5.12V14.85h5.12V4.09h9.06v10.76h10.55v7.31h-10.55Z" fill="#222"/></g></g></svg></span>
+  <span class="sep">/</span>
+  <span class="page-title">Analysis</span>
+</div>
+
+<script>const qdata = __QLUENT_JSON_DATA__;</script>
+
+<script>
+// Chart.js global defaults — match Qluent style
+Chart.defaults.font.family = "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#9ca3af';
+
+// Qluent palette — matches the Qluent app design system
+const Q = {
+  // Primary: purple (from Qluent UI --primary)
+  primary: '#6664F4',
+  primaryFill: 'rgba(102,100,244,0.12)',
+  primaryFillStrong: 'rgba(102,100,244,0.35)',
+  // Chart series (from Qluent UI --chart-1 through --chart-5)
+  chart1: '#6664F4',  // purple
+  chart2: '#00D4AA',  // cyan
+  chart3: '#4ECDC4',  // teal
+  chart4: '#FF6B6B',  // coral
+  chart5: '#D4A843',  // gold
+  chart6: '#8B7FE8',  // light purple
+  // Semantic
+  green: '#22c55e',
+  greenFill: 'rgba(34,197,94,0.15)',
+  red: '#ef4444',
+  redFill: 'rgba(239,68,68,0.15)',
+  // Neutral
+  gray: '#d1d5db',
+  grayLight: '#f3f4f6',
+  gridLine: '#f3f4f6',
+  text: '#1a1a2e',
+  textBody: '#374151',
+  textDim: '#6b7280',
+  textMuted: '#9ca3af',
+};
+
+const TOOLTIP_BASE = {
+  backgroundColor: '#fff',
+  titleColor: Q.text,
+  bodyColor: Q.textDim,
+  borderColor: '#e8e8ef',
+  borderWidth: 1,
+  padding: 12,
+  cornerRadius: 8,
+};
+
+function fmtCurrency(v) {
+  if (v == null) return '\u2014';
+  const sign = v < 0 ? '-' : '';
+  const abs = Math.abs(v);
+  if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(2) + 'M';
+  if (abs >= 1e3) return sign + '$' + (abs / 1e3).toFixed(0) + 'K';
+  return '$' + v.toFixed(0);
+}
+function fmtPct(v) {
+  if (v == null) return '\u2014';
+  return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+}
+function deltaClass(v) {
+  if (v == null || v === 0) return 'delta-neutral';
+  return v > 0 ? 'delta-positive' : 'delta-negative';
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+</script>
+
+<div class="main">
+
+<!-- Header -->
+<div class="header">
+  <h1 id="dash-title"></h1>
+  <div class="period" id="dash-period"></div>
+</div>
+
+<!-- KPI cards -->
+<div class="kpi-row" id="kpi-row"></div>
+
+<script>
+(function() {
+  const label = qdata.tree_label || qdata.tree_id || 'Metric';
+  document.getElementById('dash-title').textContent = label + ' Analysis';
+  document.getElementById('dash-period').textContent = qdata.period_label || '';
+
+  // Update topbar
+  document.querySelector('.topbar .page-title').textContent = label + ' Analysis';
+
+  const ev = qdata.evaluation;
+  if (ev && ev.current_value != null) {
+    const row = document.getElementById('kpi-row');
+    row.insertAdjacentHTML('beforeend', `
+      <div class="kpi-card">
+        <div class="kpi-value">${fmtCurrency(ev.current_value)}</div>
+        <div class="kpi-delta ${deltaClass(ev.delta_ratio)}">${fmtPct(ev.delta_ratio)} (${fmtCurrency(ev.delta_value)})</div>
+        <div class="kpi-label">${esc(ev.tree_label || 'Total')}</div>
+      </div>`);
+    (ev.top_contributors || []).forEach(c => {
+      row.insertAdjacentHTML('beforeend', `
+        <div class="kpi-card">
+          <div class="kpi-value" style="font-size:1.15rem">${fmtCurrency(c.delta_value)}</div>
+          <div class="kpi-delta ${deltaClass(c.delta_share)}">${(c.delta_share * 100).toFixed(0)}% of change</div>
+          <div class="kpi-label">${esc(c.label || c.node_id)}</div>
+        </div>`);
+    });
+  }
+
+  // Pre-compute shared eval tree data for chart sections
+  if (ev && ev.nodes) {
+    const root = ev.nodes.find(n => n.parent_id === null);
+    if (root) {
+      window._evalRoot = root;
+      window._evalChildren = ev.nodes.filter(n => n.parent_id === root.id)
+        .sort((a, b) => Math.abs(b.delta_value) - Math.abs(a.delta_value));
+    }
+  }
+})();
+</script>
+
+<!-- Agent Findings -->
+<div class="findings-card" id="agent-section">
+  <h2 id="agent-title">Key Findings</h2>
+  <div id="agent-findings"></div>
+  <div id="agent-gaps"></div>
+</div>
+<script>
+(function() {
+  const agent = qdata.agent;
+  if (!agent) { document.getElementById('agent-section').classList.add('hidden'); return; }
+
+  const status = agent.status || 'unknown';
+  const statusClass = 'status-' + status;
+  const titleEl = document.getElementById('agent-title');
+  titleEl.innerHTML = esc('Key Findings') + ' <span class="status-badge ' + statusClass + '">' + esc(status.replace(/_/g, ' ')) + '</span>';
+
+  function fmtFinding(s) {
+    return s.replace(/[\u0394\u25B3] ?-?[\d.]+/g, match => {
+      const num = parseFloat(match.replace(/[\u0394\u25B3 ]/g, ''));
+      return '\u0394 ' + fmtCurrency(num);
+    });
+  }
+
+  const findingsEl = document.getElementById('agent-findings');
+  const findings = agent.top_findings || [];
+  if (findings.length) {
+    findings.forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'finding-item';
+      div.textContent = fmtFinding(f);
+      findingsEl.appendChild(div);
+    });
+  }
+
+  const gaps = agent.gaps || [];
+  const steps = agent.recommended_next_steps || [];
+
+  if (gaps.length || steps.length) {
+    const gapsEl = document.getElementById('agent-gaps');
+    const details = document.createElement('details');
+    details.style.marginTop = '8px';
+    const summary = document.createElement('summary');
+    const gapCount = gaps.length;
+    const stepCount = steps.length;
+    summary.textContent = (gapCount ? gapCount + ' gap' + (gapCount > 1 ? 's' : '') : '')
+      + (gapCount && stepCount ? ', ' : '')
+      + (stepCount ? stepCount + ' next step' + (stepCount > 1 ? 's' : '') : '');
+    details.appendChild(summary);
+
+    gaps.forEach(g => {
+      const div = document.createElement('div');
+      div.className = 'gap-item';
+      div.textContent = g;
+      details.appendChild(div);
+    });
+
+    if (steps.length) {
+      const h = document.createElement('div');
+      h.className = 'section-heading';
+      h.textContent = 'Recommended Next Steps';
+      details.appendChild(h);
+      steps.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'next-step';
+        div.innerHTML = '<div class="step-title">' + esc(s.title || '') + '</div>'
+          + '<div class="step-why">' + esc(s.why || '') + '</div>'
+          + (s.command ? '<code>' + esc(s.command) + '</code>' : '');
+        details.appendChild(div);
+      });
+    }
+
+    gapsEl.appendChild(details);
+  }
+})();
+</script>
+
+<!-- Channel Breakdown -->
+<div class="card" id="eval-section">
+  <h2>Channel Breakdown</h2>
+  <div class="sub">Current vs comparison period</div>
+  <div class="chart-container">
+    <canvas id="evalChart"></canvas>
+  </div>
+</div>
+<script>
+(function() {
+  const children = window._evalChildren;
+  if (!children || !children.length) { document.getElementById('eval-section').classList.add('hidden'); return; }
+
+  const labels = children.map(n => n.label || n.id);
+  const currentVals = children.map(n => n.current_value);
+  const compareVals = children.map(n => n.comparison_value);
+  const deltas = children.map(n => n.delta_value);
+
+  new Chart(document.getElementById('evalChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Comparison',
+          data: compareVals,
+          backgroundColor: Q.grayLight,
+          borderColor: Q.gray,
+          borderWidth: 1,
+          borderRadius: 6
+        },
+        {
+          label: 'Current',
+          data: currentVals,
+          backgroundColor: Q.primaryFillStrong,
+          borderColor: Q.primary,
+          borderWidth: 1,
+          borderRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { boxWidth: 12, padding: 16 } },
+        tooltip: {
+          ...TOOLTIP_BASE,
+          callbacks: {
+            afterBody(items) {
+              const i = items[0]?.dataIndex;
+              if (i != null) {
+                return 'Change: ' + fmtCurrency(deltas[i]) + ' (' + fmtPct(children[i].delta_ratio) + ')';
+              }
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: Q.textDim }, grid: { display: false } },
+        y: {
+          ticks: { color: Q.textMuted, callback: v => fmtCurrency(v) },
+          grid: { color: Q.gridLine },
+          border: { display: false }
+        }
+      }
+    }
+  });
+})();
+</script>
+
+<!-- Contribution to Change -->
+<div class="card" id="waterfall-section">
+  <h2>Contribution to Change</h2>
+  <div class="sub">How each channel drove the total delta</div>
+  <div class="chart-container">
+    <canvas id="waterfallChart"></canvas>
+  </div>
+</div>
+<script>
+(function() {
+  const root = window._evalRoot;
+  if (!root || !root.contributions || !root.contributions.length) {
+    document.getElementById('waterfall-section').classList.add('hidden'); return;
+  }
+
+  const contribs = [...root.contributions].sort((a, b) => b.delta_value - a.delta_value);
+  const labels = contribs.map(c => c.label || c.node_id);
+  const values = contribs.map(c => c.delta_value);
+  const shares = contribs.map(c => c.delta_share);
+  const colors = values.map(v => v >= 0 ? Q.greenFill : Q.redFill);
+  const borders = values.map(v => v >= 0 ? Q.green : Q.red);
+
+  new Chart(document.getElementById('waterfallChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: borders,
+        borderWidth: 1.5,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...TOOLTIP_BASE,
+          callbacks: {
+            label: ctx => {
+              const i = ctx.dataIndex;
+              return fmtCurrency(values[i]) + ' (' + (shares[i] * 100).toFixed(0) + '% of total change)';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: Q.textMuted, callback: v => fmtCurrency(v) },
+          grid: { color: Q.gridLine },
+          border: { display: false }
+        },
+        y: { ticks: { color: Q.textBody }, grid: { display: false } }
+      }
+    }
+  });
+})();
+</script>
+
+<!-- Trend -->
+<div class="card" id="trend-section">
+  <h2>Recent Trend</h2>
+  <div class="sub" id="trend-sub">Week-over-week metric values</div>
+  <div class="chart-container">
+    <canvas id="trendChart"></canvas>
+  </div>
+</div>
+<script>
+(function() {
+  const evals = qdata.trend?.evaluations || [];
+  const periods = qdata.trend?.periods || [];
+
+  function buildAreaChart(labels, values, pctChanges) {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+    gradient.addColorStop(0, 'rgba(102,100,244,0.25)');
+    gradient.addColorStop(1, 'rgba(102,100,244,0.02)');
+
+    new Chart(ctx.canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Value',
+          data: values,
+          borderColor: Q.primary,
+          backgroundColor: gradient,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: Q.primary,
+          pointBorderWidth: 2,
+          pointHoverRadius: 6,
+          tension: 0.35,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            ...TOOLTIP_BASE,
+            callbacks: {
+              label: ctx => fmtCurrency(ctx.parsed.y),
+              afterLabel: (ctx) => {
+                const i = ctx.dataIndex;
+                return pctChanges[i] != null ? 'Change: ' + pctChanges[i].toFixed(1) + '%' : '';
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: Q.textMuted, maxRotation: 0 }, grid: { display: false } },
+          y: {
+            ticks: { color: Q.textMuted, callback: v => fmtCurrency(v) },
+            grid: { color: Q.gridLine },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  if (evals.length) {
+    const nonZero = evals.filter(e => e.current_value !== 0 || e.comparison_value !== 0);
+    if (!nonZero.length) { document.getElementById('trend-section').classList.add('hidden'); return; }
+
+    const labels = nonZero.map(e => (e.current_window?.date_from || '').slice(5));
+    const values = nonZero.map(e => e.current_value);
+    const pctChanges = nonZero.map(e => e.delta_ratio != null ? e.delta_ratio * 100 : null);
+
+    const grain = qdata.trend?.grain || 'week';
+    document.getElementById('trend-sub').textContent = grain.charAt(0).toUpperCase() + grain.slice(1) + '-over-' + grain + ' values';
+    buildAreaChart(labels, values, pctChanges);
+
+  } else if (periods.length) {
+    const labels = periods.map(p => p.period_id || p.start_date || '');
+    const values = periods.map(p => p.value);
+    const pctChanges = periods.map(p => p.percentage_change || null);
+    buildAreaChart(labels, values, pctChanges);
+
+  } else {
+    document.getElementById('trend-section').classList.add('hidden');
+  }
+})();
+</script>
+
+<!-- Shapley Attribution (from RCA) -->
+<div class="card" id="rca-section">
+  <h2>Root Cause Attribution</h2>
+  <div class="sub">Shapley values from cooperative game theory</div>
+  <div class="chart-container">
+    <canvas id="rcaChart"></canvas>
+  </div>
+</div>
+<script>
+(function() {
+  const contributors = qdata.root_cause?.top_contributors || [];
+  if (!contributors.length) { document.getElementById('rca-section').classList.add('hidden'); return; }
+
+  const sorted = [...contributors].sort((a, b) => Math.abs(b.shapley_share || b.percentage_share || 0) - Math.abs(a.shapley_share || a.percentage_share || 0));
+  const labels = sorted.map(c => c.node || c.node_id || 'Unknown');
+  const shares = sorted.map(c => ((c.shapley_share || c.percentage_share || 0) * 100));
+  const colors = shares.map(v => v >= 0 ? Q.greenFill : Q.redFill);
+  const borders = shares.map(v => v >= 0 ? Q.green : Q.red);
+
+  new Chart(document.getElementById('rcaChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: shares,
+        backgroundColor: colors,
+        borderColor: borders,
+        borderWidth: 1.5,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...TOOLTIP_BASE,
+          callbacks: {
+            label: ctx => (ctx.parsed.x >= 0 ? '+' : '') + ctx.parsed.x.toFixed(1) + '% of total change'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: Q.textMuted, callback: v => v + '%' },
+          grid: { color: Q.gridLine },
+          border: { display: false }
+        },
+        y: { ticks: { color: Q.textBody }, grid: { display: false } }
+      }
+    }
+  });
+})();
+</script>
+
+<!-- Evidence Coverage -->
+<div class="card" id="confidence-section">
+  <h2>Evidence Coverage</h2>
+  <div class="confidence-grid">
+    <div>
+      <div class="score-display" id="conf-score"></div>
+      <div style="text-align:center;color:#9ca3af;font-size:0.8rem;">Evidence Coverage Score</div>
+    </div>
+    <div>
+      <div style="padding:8px;">
+        <div style="margin-bottom:8px;font-weight:500;color:#1a1a2e;font-size:0.85rem;">Evidence Types</div>
+        <div id="evidence-tags"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function() {
+  const rc = qdata.root_cause || {};
+  const score = rc.conclusion?.confidence_score;
+  if (score == null) { document.getElementById('confidence-section').classList.add('hidden'); return; }
+
+  const pct = (score * 100).toFixed(0);
+  const el = document.getElementById('conf-score');
+  el.textContent = pct + '%';
+  el.className = 'score-display ' + (score >= 0.8 ? 'score-high' : score >= 0.6 ? 'score-medium' : 'score-low');
+
+  const present = rc.evidence_types_present || [];
+  const missing = rc.evidence_types_missing || [];
+  const container = document.getElementById('evidence-tags');
+  present.forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'evidence-tag evidence-present';
+    span.textContent = '\u2713 ' + t;
+    container.appendChild(span);
+  });
+  missing.forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'evidence-tag evidence-missing';
+    span.textContent = '\u2717 ' + t;
+    container.appendChild(span);
+  });
+})();
+</script>
+
+<!-- Tree Comparison -->
+<div class="card" id="compare-section">
+  <h2>Tree Comparison</h2>
+  <div class="chart-container">
+    <canvas id="compareChart"></canvas>
+  </div>
+  <div id="mechanism-label" style="text-align:center;margin-top:12px;color:#9ca3af;font-size:0.8rem;"></div>
+</div>
+<script>
+(function() {
+  const t1 = qdata.tree1;
+  const t2 = qdata.tree2;
+  if (!t1 || !t2) { document.getElementById('compare-section').classList.add('hidden'); return; }
+
+  new Chart(document.getElementById('compareChart'), {
+    type: 'bar',
+    data: {
+      labels: [t1.name || 'Tree 1', t2.name || 'Tree 2'],
+      datasets: [
+        {
+          label: 'Comparison',
+          data: [t1.value_compare, t2.value_compare],
+          backgroundColor: Q.grayLight,
+          borderColor: Q.gray,
+          borderWidth: 1,
+          borderRadius: 6
+        },
+        {
+          label: 'Current',
+          data: [t1.value_current, t2.value_current],
+          backgroundColor: Q.primaryFillStrong,
+          borderColor: Q.primary,
+          borderWidth: 1,
+          borderRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { boxWidth: 12, padding: 16 } },
+        tooltip: { ...TOOLTIP_BASE }
+      },
+      scales: {
+        x: { ticks: { color: Q.textDim }, grid: { display: false } },
+        y: {
+          ticks: { color: Q.textMuted },
+          grid: { color: Q.gridLine },
+          border: { display: false }
+        }
+      }
+    }
+  });
+
+  if (qdata.mechanism_type) {
+    document.getElementById('mechanism-label').textContent =
+      'Mechanism: ' + qdata.mechanism_type.replace(/_/g, ' ');
+  }
+})();
+</script>
+
+<!-- No-data fallback -->
+<div class="card hidden" id="no-data-section">
+  <div class="no-data">No visualizable data found.<br>Run <code>/qluent:investigate</code> first.</div>
+</div>
+<script>
+(function() {
+  const sections = ['eval-section', 'waterfall-section', 'trend-section', 'rca-section', 'confidence-section', 'compare-section'];
+  const anyVisible = sections.some(id => !document.getElementById(id).classList.contains('hidden'));
+  if (!anyVisible) document.getElementById('no-data-section').classList.remove('hidden');
+})();
+</script>
+
+</div><!-- .main -->
+</body></html>
