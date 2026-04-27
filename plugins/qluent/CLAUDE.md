@@ -41,6 +41,19 @@ tree for the latest period and present real findings rather than listing feature
 `rca`, or `compare` as your first step. The `investigate` command bundles all of these
 into a single call. Running individual commands is slower and misses agent-level analysis.
 
+## Deterministic tree-query protocol
+
+All metric values, deltas, decompositions, segment rankings, elasticity estimates, and recommendations based on numbers must be grounded in deterministic qluent JSON.
+
+- Resolve tree context before querying. If the user asks a question, use session tree context or `qluent trees list --json-output` and pass an explicit tree id.
+- Query root movement before explaining what changed.
+- Query child decomposition before naming drivers.
+- Drill into material drivers only after returned attribution or server recommendations identify them.
+- Do not invent, back-calculate, interpolate, or combine metric math outside the returned qluent fields.
+- Distinguish returned facts, interpretation, caveats, and recommendations.
+- Cite provenance for material findings: result type, tree id or label, node/segment, and exact current/comparison windows.
+- If evidence is missing, run the deterministic follow-up query or state the missing query instead of filling the gap.
+
 For elasticity, leverage, impact, scenario, or "what if" follow-ups:
 - Read the structured `investigate` JSON first, especially `levers`, `evaluation`, and `agent.recommended_next_steps`
 - Reuse the exact current/comparison windows from the last investigation
