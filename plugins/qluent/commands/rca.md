@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 Use this as a follow-up after `/qluent:investigate`, not as a starting point.
 
-If `$ARGUMENTS` looks like a question rather than a tree id, run `qluent trees list --json-output`, pick the best-fitting tree from the list (match against tree label, child node labels, and declared dimensions), and re-run with that tree id. If no tree is a clear fit, ask the user to choose from the top candidates.
+If `$ARGUMENTS` looks like a question rather than a tree id, run `qluent trees list --json-output`, pick the best-fitting tree from the list (match against tree label, child node labels, and declared dimensions), and re-run with that tree id. If no tree is a clear fit, ask the user to choose from the top candidates. Quantitative RCA claims require returned `qluent rca analyze` JSON for the selected tree/window.
 
 ## Step 1: Resolve tree and window deterministically
 
@@ -60,5 +60,7 @@ The response includes pre-computed conclusions, attribution shares, confidence s
 - List the top contributing nodes with their attribution shares
 - Note any gaps or warnings from the server response
 - State the exact current and comparison windows
+- Cite provenance for material findings: RCA result, tree id or label, node, and exact current/comparison windows
+- Separate returned facts from interpretation, caveats, and recommendations
 - Include caveats when materiality or confidence is insufficient
 - End with ranked next-best drills and why each one is next

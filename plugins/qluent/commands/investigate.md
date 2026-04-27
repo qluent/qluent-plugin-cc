@@ -10,6 +10,16 @@ This is the primary entry point for all metric analysis. It bundles validation, 
 
 The qluent server is deterministic — it does NOT match natural-language questions to trees. YOU pick which tree to analyze when the user asks a question, by listing trees and matching against their metadata.
 
+## Deterministic query contract
+
+- Resolve tree context before analysis. Do not let natural language stand in for a tree id.
+- Run deterministic qluent JSON before making quantitative claims.
+- Use the returned root movement before explaining a change.
+- Use returned child decomposition, attribution, trend, comparison, lever, or segment fields before naming drivers or rankings.
+- Keep provenance for material findings: command/result type, tree id or label, node/segment, and exact current/comparison windows.
+- Separate facts, interpretation, caveats, and recommendations in the answer.
+- Do not invent, back-calculate, or estimate metric math that is not present in the returned qluent JSON.
+
 ## Step 1: Decide whether `$ARGUMENTS` is a tree id or a question
 
 If `$ARGUMENTS` is empty, ends with `?`, contains spaces, or contains words like `why`, `what`, `how`, `drove`, `drop`, `spike`, treat it as a **question** and go to Step 2.
@@ -85,6 +95,8 @@ If the user asks for a segment or breakdown that the current tree does not suppo
 
 - Always pass an explicit `<tree_id>` to `investigate`, chosen client-side via Step 2 (`qluent trees list --json-output`).
 - Always use `--json-output` when driving the workflow.
+- Require deterministic query output before every quantitative claim.
+- Cite result provenance for material findings.
 - Prefer the embedded `levers` block before rerunning commands for impact questions.
 - For full-year date ranges, if RCA times out, suggest quarterly breakdowns.
 - If the user asks a follow-up, check if the existing data answers it before re-running.
