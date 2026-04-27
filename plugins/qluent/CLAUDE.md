@@ -86,9 +86,28 @@ For unsupported segment cuts or breakdown requests:
 The specialized agents (trend-interpreter, rca-validator, segment-explorer) are launched
 in parallel by the investigate command or qluent-analyst for complex, broad, or low-confidence cases.
 
-## Visualization
+## Visualization and reporting
 
-**Always use `/qluent:visualize` for charts.** Never write custom HTML, CSS, or Chart.js code. The plugin includes a styled dashboard renderer (`render-charts.sh`) with the Qluent design system — custom HTML will look wrong and miss brand styling.
+**Always use `/qluent:visualize` for charts and RCA reports.** When deterministic
+RCA or elasticity JSON is available, shape it into the UI `RcaReportSpec` contract
+first: set `outcomeShape`, populate ordered `sections[]`, and preserve `caveats[]`
+and `sources[]`. Do not hand-roll report HTML when the UI report contract can be used.
+
+Map qluent JSON into report sections consistently:
+- root movement → `root_movement`
+- RCA driver findings and direct contributors → `driver_decomposition`
+- `segment_findings` → `material_segment_scan`
+- `mix_shift` → `mix_shift`
+- elasticity/levers → `elasticity_summary`
+- `agent.recommended_next_steps` → `next_drills`
+
+Preserve deterministic provenance, exact date windows, materiality, caveats, and
+CLI/UI evidence labels: `observed_correlation`, `historical_elasticity`,
+`model_estimate`, and `experiment_backed`.
+
+For quick local demos or basic data, `/qluent:visualize` may still use the styled
+dashboard renderer (`render-charts.sh`) with the Qluent design system. Never write
+custom HTML, CSS, or Chart.js code by hand.
 
 All qluent analysis commands should pipe through `tee` to auto-save visualization data:
 
@@ -102,7 +121,7 @@ This makes `/qluent:visualize` immediately available after any analysis.
 
 This plugin provides purpose-built skills for common workflows. **Always use them instead of improvising.**
 
-- Charts or dashboards → `/qluent:visualize` (never write custom HTML)
+- Charts or RCA reports → `/qluent:visualize` (prefer `RcaReportSpec`; never write custom HTML)
 - Analysis → `/qluent:investigate` (never manually chain CLI commands as a first step)
 - Follow-ups → `/qluent:trend`, `/qluent:rca`, `/qluent:compare`, or `qluent trees levers` (not ad-hoc scripts)
 
