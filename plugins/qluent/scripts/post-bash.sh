@@ -211,7 +211,7 @@ echo "[Qluent] Analysis complete."
 # Viz data reminder
 if [[ "$command" == *"--json-output"* ]]; then
   if [ -f "$viz_file" ]; then
-    echo "  → Visualization data saved. Use /qluent:visualize for styled Qluent charts — do not write custom HTML."
+    echo "  → Visualization data saved. Use /qluent:visualize to produce a UI RcaReportSpec first; use styled HTML only as a local fallback."
   else
     echo "  → To enable /qluent:visualize, pipe output through: | tee /tmp/qluent-viz-data.json"
   fi
@@ -223,9 +223,9 @@ fi
 
 # Contextual follow-up suggestions
 if $is_investigate; then
-  echo "  → Follow-up skills: /qluent:visualize (charts), /qluent:rca (root cause), /qluent:trend (multi-period), /qluent:compare (cross-tree)"
+  echo "  → Follow-up skills: /qluent:visualize (RcaReportSpec/charts), /qluent:rca (root cause), /qluent:trend (multi-period), /qluent:compare (cross-tree)"
 fi
 
 if $is_trend || $is_rca || $is_compare; then
-  echo "  → Offer /qluent:visualize to render these results as styled charts."
+  echo "  → Offer /qluent:visualize to shape these results into RcaReportSpec sections, with styled charts as a fallback."
 fi
