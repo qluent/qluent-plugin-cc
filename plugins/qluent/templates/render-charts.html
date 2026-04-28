@@ -165,6 +165,19 @@
     line-height: 1.5;
   }
   .finding-item:last-child { border-bottom: none; }
+  .caveat-card {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    color: #92400e;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+  .caveat-card strong {
+    color: #78350f;
+  }
 
   details summary {
     cursor: pointer;
@@ -318,11 +331,35 @@ function fmtPct(v) {
   if (v == null) return '\u2014';
   return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
 }
+function fmtPctFlexible(v) {
+  if (v == null || Number.isNaN(Number(v))) return null;
+  const n = Number(v);
+  const ratio = Math.abs(n) > 1 ? n / 100 : n;
+  return fmtPct(ratio);
+}
 function deltaClass(v) {
   if (v == null || v === 0) return 'delta-neutral';
   return v > 0 ? 'delta-positive' : 'delta-negative';
 }
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function daysBetweenInclusive(win) {
+  if (!win?.date_from || !win?.date_to) return null;
+  const start = new Date(win.date_from + 'T00:00:00Z');
+  const end = new Date(win.date_to + 'T00:00:00Z');
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  return Math.round((end - start) / 86400000) + 1;
+}
+function pickNormalizedDelta(data) {
+  const candidates = [
+    data?.evaluation?.per_day_delta_ratio,
+    data?.evaluation?.normalized_delta_ratio,
+    data?.evaluation?.daily_delta_ratio,
+    data?.root_cause?.normalized_delta_ratio,
+    data?.period_normalization?.delta_ratio,
+    data?.period_normalization?.per_day_delta_ratio
+  ];
+  return candidates.find(v => v != null);
+}
 </script>
 
 <div class="main">
@@ -335,6 +372,9 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 
 <!-- KPI cards -->
 <div class="kpi-row" id="kpi-row"></div>
+
+<!-- Period caveats -->
+<div class="caveat-card hidden" id="period-caveat"></div>
 
 <script>
 (function() {
@@ -362,6 +402,19 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
           <div class="kpi-label">${esc(c.label || c.node_id)}</div>
         </div>`);
     });
+  }
+
+  const currentDays = daysBetweenInclusive(qdata.current_window);
+  const comparisonDays = daysBetweenInclusive(qdata.comparison_window);
+  if (currentDays && comparisonDays && currentDays !== comparisonDays) {
+    const normalized = fmtPctFlexible(pickNormalizedDelta(qdata));
+    const raw = fmtPctFlexible(qdata.evaluation?.delta_ratio);
+    const caveat = document.getElementById('period-caveat');
+    const normalizedText = normalized
+      ? ` Per-day normalized delta: ${esc(normalized)}.`
+      : ' Per-day normalized delta was not returned; request normalized delta fields before treating the raw change as like-for-like.';
+    caveat.innerHTML = `<strong>Period comparability:</strong> current window is ${currentDays} days and comparison window is ${comparisonDays} days. Raw delta${raw ? ` is ${esc(raw)}` : ''}.${normalizedText}`;
+    caveat.classList.remove('hidden');
   }
 
   // Pre-compute shared eval tree data for chart sections
