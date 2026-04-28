@@ -1,7 +1,7 @@
 ---
 name: qluent-interpretation
-description: Internal reference for interpreting qluent CLI output — Shapley attribution, trend labels, RCA confidence scores
-user-invocable: false
+description: Canonical protocol for interpreting qluent CLI output — deterministic-query rules, Shapley attribution, trend labels, RCA confidence/evidence coverage, elasticity guardrails, and unsupported-cut fallback. Loaded automatically by qluent agents via `skills:` frontmatter and explicitly by qluent slash commands.
+user-invocable: true
 ---
 
 # Interpreting qluent results

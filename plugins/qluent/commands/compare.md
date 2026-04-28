@@ -1,13 +1,19 @@
 ---
 description: Compare two metric trees side-by-side to validate the mechanism behind a change
 argument-hint: "[tree1] [tree2] [--period 'last week' | --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD]"
-allowed-tools: Bash(qluent *)
+allowed-tools: Bash(qluent *), Read
 disable-model-invocation: true
 ---
 
 # Compare metric trees
 
 Use this as a follow-up after `/qluent:investigate`, not as a starting point.
+
+Before running the compare, `Read` the canonical interpretation Module so the deterministic-query protocol and mechanism-decomposition rules are in context:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
 
 If `$ARGUMENTS` looks like a question rather than two tree ids, run `qluent trees list --json-output`, pick the two most relevant trees from the list (match against tree label, child node labels, and declared dimensions), and re-run with those tree ids.
 

@@ -1,13 +1,19 @@
 ---
 description: Run multi-period trend analysis for a metric tree
 argument-hint: "[tree-name] [--periods 4] [--grain week|month] [--as-of YYYY-MM-DD]"
-allowed-tools: Bash(qluent *)
+allowed-tools: Bash(qluent *), Read
 disable-model-invocation: true
 ---
 
 # Trend analysis
 
 Use this as a follow-up after `/qluent:investigate`, not as a starting point.
+
+Before running trend analysis, `Read` the canonical interpretation Module so the deterministic-query protocol, trend label semantics, and anomaly-flag handling are in context:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
 
 If `$ARGUMENTS` looks like a question rather than a tree id, run `qluent trees list --json-output`, pick the best-fitting tree from the list (match against tree label, child node labels, and declared dimensions), and re-run with that tree id.
 
