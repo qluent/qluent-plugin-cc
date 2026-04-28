@@ -86,7 +86,11 @@ print()
 print('Fallback rule: if a requested cut is unavailable on the chosen tree, keep the same windows and pivot to the closest tree that lists that dimension.')
 print('Combine the original tree for KPI-specific explanation with the fallback tree for segmentation instead of stopping at the limitation.')
 print()
-print('Ask a business performance question or use /qluent:investigate to start.')
+print('Business-language routing hints: revenue/sales/GMV/AOV -> revenue; growth/users/acquisition/reactivation -> growth; delivery/late/failed/courier/ops quality -> operations; conversion/checkout/cart/traffic/payment -> conversion_funnel.')
+print('On first run, orient the user from this tree metadata and offer one concrete first command. Use qluent whoami/status/suggestions only when available; do not probe unsupported project/status commands.')
+print('After an investigation, offer an RCA report, mix-shift report, or elasticity report through /qluent:visualize before any local HTML fallback.')
+print()
+print('Ask a business performance question or use /qluent:investigate to start, for example /qluent:investigate revenue last month.')
 " 2>/dev/null) || context=""
 
 if [ -n "$context" ]; then

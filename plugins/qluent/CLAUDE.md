@@ -28,6 +28,23 @@ segment dimensions — use that context to tailor suggestions.
 **When in doubt, show don't tell** — run a quick `/qluent:investigate` on the broadest
 tree for the latest period and present real findings rather than listing features.
 
+**First-run orientation:** after login or plugin reload, orient the user from available
+tree metadata. Name the connected project if the CLI reports it, list the available tree
+ids, summarize what each tree is useful for, and offer one concrete first investigation.
+Use `qluent whoami`, `qluent status`, and `qluent suggestions` only when those commands
+are available. Do not probe made-up commands such as `qluent projects list`; if a command
+is unsupported, fall back to `qluent trees list --json-output` and the session-start
+tree context.
+
+**Business-language routing hints:**
+- sales, revenue, GMV, AOV, basket, incentives -> `revenue`
+- growth, users, frequency, acquisition, reactivation -> `growth`
+- delivery, late, failed, courier, ops quality -> `operations`
+- conversion, checkout, cart, traffic, payment -> `conversion_funnel`
+
+When the user asks what they can do, turn available tree metadata into project-specific
+suggestions and end with a specific command, such as `/qluent:investigate revenue last month`.
+
 ## Commands
 
 - `/qluent:investigate` — Primary entry point. Bundles validation, trend, evaluation, and RCA in one call.
@@ -108,6 +125,11 @@ CLI/UI evidence labels: `observed_correlation`, `historical_elasticity`,
 For quick local demos or basic data, `/qluent:visualize` may still use the styled
 dashboard renderer (`render-charts.sh`) with the Qluent design system. Never write
 custom HTML, CSS, or Chart.js code by hand.
+
+After a successful investigation, offer outcome-shaped report follow-ups when the data
+supports them: an RCA report for driver decomposition, a mix-shift report when segment
+or mix effects are present, or an elasticity report for a selected lever/outcome. Use
+custom HTML only as an explicit local fallback when the UI report contract is unavailable.
 
 All qluent analysis commands should pipe through `tee` to auto-save visualization data:
 
