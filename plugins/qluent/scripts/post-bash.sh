@@ -17,21 +17,24 @@ command=$(printf '%s' "${TOOL_INPUT:-}" | "$jq_bin" -r '.command // empty' 2>/de
 
 # Detect which type of command was run
 is_investigate=false
+is_deep_dive=false
 is_trend=false
 is_rca=false
 is_compare=false
 
 [[ "$command" == *"investigate"* ]] && is_investigate=true
+[[ "$command" == *"deep-dive"* ]] && is_deep_dive=true
 [[ "$command" == *"trend"* ]] && is_trend=true
 [[ "$command" == *"rca"* ]] && is_rca=true
 [[ "$command" == *"compare"* ]] && is_compare=true
 
 # Only act on analysis commands (not list, validate, setup, etc.)
-if ! $is_investigate && ! $is_trend && ! $is_rca && ! $is_compare; then
+if ! $is_investigate && ! $is_deep_dive && ! $is_trend && ! $is_rca && ! $is_compare; then
   exit 0
 fi
 
 viz_file=/tmp/qluent-viz-data.json
+deep_dive_file=/tmp/qluent-deep-dive-bundle.json
 catalog_file=/tmp/qluent-tree-capabilities.json
 
 parse_requested_dims_from_command() {
@@ -210,20 +213,30 @@ echo "[Qluent] Analysis complete."
 
 # Viz data reminder
 if [[ "$command" == *"--json-output"* ]]; then
-  if [ -f "$viz_file" ]; then
+  if $is_deep_dive; then
+    if [ -f "$deep_dive_file" ]; then
+      echo "  → Deep-dive bundle saved. Synthesize one cross-tree narrative; do not split it into separate tree reports."
+    else
+      echo "  → To cache the deep-dive bundle for follow-up questions, pipe output through: | tee /tmp/qluent-deep-dive-bundle.json"
+    fi
+  elif [ -f "$viz_file" ]; then
     echo "  → Visualization data saved. Use /qluent:visualize to produce a UI RcaReportSpec first; use styled HTML only as a local fallback."
   else
     echo "  → To enable /qluent:visualize, pipe output through: | tee /tmp/qluent-viz-data.json"
   fi
 fi
 
-if [[ "$command" == *"--json-output"* ]]; then
+if [[ "$command" == *"--json-output"* ]] && ! $is_deep_dive; then
   build_fallback_guidance "$command" "$viz_file" "$catalog_file"
 fi
 
 # Contextual follow-up suggestions
 if $is_investigate; then
   echo "  → Follow-up skills: /qluent:visualize (RcaReportSpec/charts), /qluent:rca (root cause), /qluent:trend (multi-period), /qluent:compare (cross-tree)"
+fi
+
+if $is_deep_dive; then
+  echo "  → Follow-up skills: /qluent:investigate, /qluent:rca, /qluent:trend, or /qluent:compare using the ranked next drills from the report."
 fi
 
 if $is_trend || $is_rca || $is_compare; then
