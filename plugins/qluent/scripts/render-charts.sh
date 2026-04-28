@@ -5,7 +5,7 @@
 set -euo pipefail
 
 INPUT="${1:-/tmp/qluent-viz-data.json}"
-OUTPUT="${2:-/tmp/qluent-viz.html}"
+OUTPUT="${2:-/tmp/qluent-viz-$(date +%Y%m%d-%H%M%S).html}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE="${SCRIPT_DIR}/../templates/render-charts.html"
 

@@ -33,15 +33,19 @@ into one-off dashboard markup.
 
 **Simple mode** (`--simple` flag or no investigation context): Use the generic render script
 for a quick chart. This is the fallback for basic data or when the user just wants something fast.
+Use a unique output path so stale `/tmp/qluent-viz.html` files do not collide with new runs:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" /tmp/qluent-viz-data.json /tmp/qluent-viz.html
+out="/tmp/qluent-viz-$(date +%Y%m%d-%H%M%S).html"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" /tmp/qluent-viz-data.json "$out"
+echo "Rendered Qluent report fallback: $out"
 ```
 
 **HTML fallback mode** (local demo only): Generate a custom HTML dashboard driven by the
 analysis findings when the user explicitly asks for browser-rendered charts or the UI
-report contract is unavailable. Use this for `/tmp/qluent-viz.html`, not as the primary
-synchronized report artifact.
+report contract is unavailable. Prefer the renderer script and a unique
+`/tmp/qluent-viz-<timestamp>.html` path; only overwrite an existing file after reading it
+and confirming that the user wants to update that exact file.
 
 ## Step 3: Build an outcome-shaped RcaReportSpec
 
@@ -161,7 +165,8 @@ Scan the JSON and include sections based on available data:
 
 ### Building the HTML
 
-Write the complete dashboard to `/tmp/qluent-viz.html`:
+Write the complete dashboard to a fresh fallback path such as
+`/tmp/qluent-viz-<timestamp>.html`:
 
 - Use the design tokens, fonts, and Chart.js defaults from the `dashboard-design` skill
 - Include the Qluent logo SVG in the sticky topbar
@@ -199,10 +204,10 @@ const levers = data.levers.top_levers;
 
 ```bash
 # macOS
-open /tmp/qluent-viz.html
+open "$out"
 
 # Linux
-xdg-open /tmp/qluent-viz.html
+xdg-open "$out"
 ```
 
 ## Rules
@@ -212,6 +217,7 @@ xdg-open /tmp/qluent-viz.html
   whenever deterministic RCA or elasticity output is available
 - Do not hand-roll report HTML when the UI report contract can be used
 - Preserve deterministic provenance, caveats, date windows, materiality, and evidence labels
+- Use unique fallback HTML output paths; do not silently reuse stale dashboards
 - Use the `dashboard-design` skill for all design decisions — do not invent new styles
 - Section titles must be insight statements, not generic labels
 - Only include sections backed by actual data — never generate placeholder charts
