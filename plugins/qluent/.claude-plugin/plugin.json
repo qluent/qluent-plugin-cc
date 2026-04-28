@@ -1,7 +1,6 @@
 {
   "name": "qluent",
-  "version": "0.3.1",
-  "promptVersion": "2026-04-28-rspec-strict",
+  "version": "0.3.0",
   "description": "Analyze business metrics, investigate KPI movements, and run deterministic root cause analysis from Claude Code.",
   "author": {
     "name": "Qluent"
