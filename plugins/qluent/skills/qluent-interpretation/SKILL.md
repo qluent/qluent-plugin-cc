@@ -1,66 +1,155 @@
 ---
 name: qluent-interpretation
-description: Canonical protocol for interpreting qluent CLI output — deterministic-query rules, Shapley attribution, trend labels, RCA confidence/evidence coverage, elasticity guardrails, and unsupported-cut fallback. Loaded automatically by qluent agents via `skills:` frontmatter and explicitly by qluent slash commands.
+description: Canonical protocol for interpreting qluent CLI output — tree resolution, windows, provenance, Shapley, elasticity guardrails, and segment-cut fallback. Loaded by qluent commands and agents; user-invocable for protocol inspection.
 user-invocable: true
 ---
 
-# Interpreting qluent results
+# Qluent interpretation protocol
 
-The qluent server returns pre-interpreted analysis results. Present the server-provided labels, scores, and interpretations directly to the user.
+The qluent server is deterministic. It returns pre-interpreted analysis (root
+movement, Shapley attribution, trend labels, mechanism interpretations,
+confidence scores, elasticity tables). Your job is to drive it correctly and
+present what it returns — not to recompute, infer, or paraphrase the math.
 
-Key principles:
-- Quantitative claims must come from deterministic qluent JSON returned in the current workflow. Do not invent metric values, deltas, percentages, attribution shares, or segment rankings.
-- Every material finding should cite its provenance in plain language: command/result type, tree id or label, node/segment, and current/comparison windows.
-- Separate facts from interpretation, caveats, and recommendations. Facts are returned values; interpretation is the server-provided label or your synthesis from returned evidence.
-- Confidence scores are evidence-coverage heuristics, not probabilities. Never describe them as likelihoods.
-- Attribution values are computed server-side using Shapley values from cooperative game theory.
-- Trend labels, anomaly flags, and mechanism interpretations are included in the server response.
-- When a `levers` block is available, lever impacts are local linear estimates from the current operating point, not forecasts.
+This skill is the single source of truth for protocol. Commands and agents
+should reference it by name rather than restating the rules.
 
-## Deterministic query protocol
+## Tree resolution
 
-Before making quantitative claims:
+The server does not match natural-language questions to trees. Pick a tree id
+client-side before any quantitative call.
 
-1. Resolve tree context from session tree metadata or `qluent trees list --json-output`.
-2. Run the deterministic qluent command that returns the needed evidence, always with `--json-output`.
-3. Use root movement from `qluent trees investigate`, `qluent rca analyze`, or another returned JSON field before explaining a change.
-4. Use child decomposition, attribution, trend, comparison, lever, or segment fields only after the command has returned them.
-5. Preserve result provenance in the answer: tree, node/segment, command type, and exact windows.
+1. If the user named a tree (`revenue`, `order_volume`, `roas`), use it directly.
+2. Otherwise run `qluent trees list --json-output` and match the question
+   against each tree's `id`, `label`, `description`, declared `dimensions`, and
+   child node labels. Bias toward:
+   - nouns that match a tree label (e.g. "revenue" → revenue tree)
+   - concepts that match a child node label (e.g. "spend efficiency" → roas)
+   - dimensions named in the question (e.g. "by country" → tree declaring `country`)
+3. If no tree is a clear winner, ask the user to choose from the top 2–3
+   candidates with labels and descriptions. Use `AskUserQuestion` only when
+   the caller has that tool; otherwise ask in plain text. Do not guess silently.
 
-Never back-calculate missing values, interpolate absent segment rankings, or combine numbers from different windows as if they were one result. If the required deterministic output is missing, say what query is needed next.
+Always pass an explicit `<tree_id>` to every qluent subcommand. Always use
+`--json-output`.
+
+## Windows
+
+Reuse the exact `current_window` and `comparison_window` from the prior
+investigation when answering follow-ups. Do not infer a new period unless the
+user changed it.
+
+- Natural-language periods: `--period "last week"`.
+- Explicit windows: `--current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD`.
+- If the user gave neither, default to `--period "last week"` for `investigate`
+  and ask for a period before `deep-dive`. Use `AskUserQuestion` only when the
+  caller has that tool; otherwise ask in plain text.
+
+When current and comparison windows have different day counts, surface that as
+a caveat near the headline.
+
+## Quantitative claims
+
+Every metric value, delta, decomposition, segment ranking, elasticity estimate,
+and ranked recommendation must be grounded in deterministic qluent JSON
+returned during the current workflow.
+
+- Query root movement before explaining what changed.
+- Query child decomposition before naming drivers.
+- Drill into material drivers only after returned attribution or
+  `agent.recommended_next_steps` identifies them.
+- Do not invent, back-calculate, interpolate, or combine metric math outside
+  the returned qluent fields.
+- Never parse tool-result temp files or write ad-hoc scripts against prior
+  bash output.
+- Do not rerun both JSON and non-JSON versions of the same command unless JSON
+  is genuinely insufficient.
+
+For every material finding, cite provenance in plain language: result type,
+tree id or label, node/segment, exact current/comparison windows. Separate
+returned facts from interpretation, caveats, and recommendations.
+
+If a required field is missing, run the deterministic follow-up query or state
+the missing query — do not fill the gap from prose.
+
+## Confidence and Shapley
+
+- Confidence scores are evidence-coverage heuristics. Never describe them as
+  probabilities or likelihoods.
+- Attribution values are computed server-side using Shapley values from
+  cooperative game theory. Use the returned numbers; do not redistribute them.
+- Trend labels, anomaly flags, and mechanism interpretations are returned by
+  the server. Present them; do not relabel.
 
 ## Elasticity and lever guardrails
 
-Elasticity output is directional decision support, not causal proof. Treat it as a measured association from the returned sample window unless the server response explicitly includes causal validation.
+Elasticity output is directional decision support, not causal proof. Treat it
+as a measured association from the returned sample window unless the response
+explicitly includes causal validation.
 
 When interpreting `levers`, `elasticity`, scenario, or impact fields:
 
-- Label the evidence type: elasticity estimate, Shapley attribution, trend corroboration, segment concentration, or server-provided causal validation.
-- State the exact sample windows used and the dimensions or cuts included in the returned result.
-- Report the server-provided confidence, materiality, data-quality warnings, and guardrail metrics before recommending any lever change.
-- Distinguish correlation and sensitivity from causality. Do not write that a lever "caused" root KPI movement unless a returned field explicitly supports causal language.
-- Treat low confidence, immaterial effects, sparse windows, volatile segments, or guardrail warnings as reasons to suggest the next drill or test, not an action plan.
-- For scenario rows such as +1%, +5%, or +10%, say they are local linear estimates from the current operating point and may not hold outside the observed range.
+- Label the evidence type using the returned label when present:
+  `observed_correlation`, `historical_elasticity`, `model_estimate`,
+  `experiment_backed`.
+- State the exact sample windows and dimensions/cuts in the returned result.
+- Report server-provided confidence, materiality, data-quality warnings, and
+  guardrail metrics before recommending any lever change.
+- Distinguish correlation and sensitivity from causality. Do not write that a
+  lever "caused" a movement unless a returned field supports causal language.
+- Treat low confidence, immaterial effects, sparse windows, volatile segments,
+  or guardrail warnings as reasons to suggest the next drill or test, not an
+  action plan.
+- Scenario rows (+1%, +5%, +10%) are local linear estimates from the current
+  operating point and may not hold outside the observed range.
 
-Recommendations require all of these conditions:
+Recommend a lever change only when all of these hold in the returned result:
 
-- The lever effect is material in the returned result, not just directionally interesting.
-- Confidence or evidence coverage is sufficient according to the server response.
-- Guardrail metrics do not show an offsetting risk or unresolved data-quality warning.
-- The recommendation is scoped to the returned sample window and segment/dimension context.
+1. The lever effect is material, not merely directional.
+2. Confidence/evidence coverage is sufficient.
+3. Guardrail metrics show no offsetting risk and no unresolved data-quality
+   warning.
+4. The recommendation is scoped to the returned sample window and segment.
 
-If those conditions are not met, recommend the next best drill instead. Examples include extending the window, validating the same lever across another segment, running `/qluent:compare`, or asking for an experiment/instrumentation check.
+Otherwise recommend the next drill: extend the window, validate across another
+segment, run `/qluent:compare`, or request an experiment/instrumentation check.
 
-Acceptable phrasing:
+Acceptable: *"The returned elasticity table shows a directional association in
+2026-04-13:2026-04-19 vs 2026-04-06:2026-04-12; conversion rate has the largest
+local sensitivity, with sufficient evidence coverage and no guardrail warning.
+Treat the +5% row as a local estimate, not a forecast."*
 
-- "The returned elasticity table shows a directional association: in 2026-04-13:2026-04-19 vs 2026-04-06:2026-04-12, conversion rate has the largest local sensitivity, with sufficient evidence coverage and no guardrail warning. Treat the +5% row as a local estimate, not a forecast."
-- "This is weak evidence for action. The lever is directionally positive, but the returned confidence is low and the segment sample is sparse, so the next step is to drill by channel before changing spend."
-- "The RCA attributes most of the movement to average order value, while the elasticity estimate says conversion rate is the larger local lever. That is a mechanism hypothesis, not proof that changing conversion caused the prior movement."
+Unacceptable: *"Increase conversion by 5% and revenue will rise by the
+scenario amount."* — overstates causality and ignores guardrails.
 
-Unacceptable phrasing:
+For follow-ups about elasticity, leverage, or "what if": read the embedded
+`investigate.levers` block first. Run `qluent trees levers <tree_id> --current
+<start>:<end> --compare <start>:<end> --json-output` only when the embedded
+block is insufficient.
 
-- "Increase conversion by 5% and revenue will rise by the scenario amount."
-- "The elasticity proves conversion caused the revenue drop."
-- "This lever is the best action" when confidence, materiality, guardrails, or sample windows are missing.
+## Unsupported segment cuts
 
-Refer to the server response fields for all interpretation details.
+If the user asks for a dimension the current tree does not expose:
+
+1. Reuse the exact current/comparison windows from the prior result.
+2. Check the session tree catalog (or run `qluent trees list --json-output`)
+   for a compatible tree that declares the missing dimension.
+3. Re-run the investigation or RCA on the fallback tree with the same windows.
+4. Synthesize both views: original tree for KPI-specific reasoning, fallback
+   tree for the requested segmentation. State which tree provided which view.
+
+Never stop at the limitation. The PostToolUse hook surfaces compatible
+fallback trees automatically — follow its suggestions.
+
+## Visualization
+
+When deterministic RCA or elasticity output is available, the primary artifact
+is a `RcaReportSpec` produced by `/qluent:visualize`. Do not hand-roll HTML,
+CSS, or Chart.js for normal analysis output. Local HTML is a fallback only
+when the user explicitly requests `--simple`/`--html`/a browser demo, or the
+UI report contract is unavailable.
+
+See `/qluent:visualize` for the section mapping (`root_movement`,
+`driver_decomposition`, `material_segment_scan`, `mix_shift`,
+`elasticity_summary`, `next_drills`) and the `dashboard-design` skill for HTML
+fallback styling.

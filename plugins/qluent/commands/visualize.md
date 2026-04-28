@@ -6,11 +6,20 @@ allowed-tools: Bash(*), Read, Write, Glob
 
 # Visualize qluent output
 
-Shapes the most recent qluent analysis into an outcome-shaped `RcaReportSpec` for the
-Qluent UI. When deterministic RCA or elasticity output is available, the report spec is
-the required primary artifact. Use local HTML only when the user explicitly requests a
-local/browser demo, passes `--simple` or `--html`, or the UI report contract cannot be
-consumed.
+Shapes the most recent qluent analysis into an outcome-shaped `RcaReportSpec`
+for the Qluent UI. When deterministic RCA or elasticity output is available
+the report spec is the required primary artifact. Local HTML is a fallback
+only on `--simple`/`--html`, an explicit local/browser request, or when the
+UI contract cannot be consumed. Follow the `qluent-interpretation` skill for
+provenance and evidence labels.
+
+## Step 0: Load the canonical interpretation protocol
+
+Before shaping a report, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
 
 ## Step 1: Locate and validate the data
 
@@ -117,18 +126,15 @@ backed by actual qluent fields:
 
 ### Provenance and evidence labels
 
-Every material section must preserve deterministic provenance:
-
-- Include the qluent command/result type, tree id or label, node id/label, segment
-  dimension/value when present, exact current/comparison windows, materiality, and
-  confidence/evidence coverage.
-- Carry caveats from returned `gaps`, low confidence, sparse samples, missing dimensions,
-  unsupported cuts, guardrail warnings, stale windows, or unequal current/comparison
-  period lengths into top-level `caveats[]`.
-- Carry result references and data lineage into `sources[]`; do not cite unstated data.
-- Use CLI/UI evidence labels exactly when present: `observed_correlation`,
-  `historical_elasticity`, `model_estimate`, and `experiment_backed`.
-- Separate returned facts from interpretation, caveats, and recommendations.
+Every material section preserves provenance per the `qluent-interpretation`
+skill: command/result type, tree id/label, node id/label, segment
+dimension/value, exact current/comparison windows, materiality, and
+confidence/evidence coverage. Carry returned caveats (gaps, low confidence,
+sparse samples, missing dimensions, unsupported cuts, guardrail warnings,
+stale or unequal-length windows) into top-level `caveats[]`. Carry result
+references and data lineage into `sources[]`. Use returned evidence labels
+exactly when present: `observed_correlation`, `historical_elasticity`,
+`model_estimate`, `experiment_backed`.
 
 ## Step 4: HTML fallback for local demos
 
@@ -155,16 +161,14 @@ xdg-open "$out"
 
 ## Rules
 
-- Always read the data file first to verify freshness before rendering
-- Prefer an outcome-shaped `RcaReportSpec` with `outcomeShape` and ordered `sections[]`
-  whenever deterministic RCA or elasticity output is available
-- Do not hand-roll report HTML when the UI report contract can be used
-- Preserve deterministic provenance, caveats, date windows, materiality, and evidence labels
-- Use unique fallback HTML output paths; do not silently reuse stale dashboards
-- Preserve period comparability caveats in both `RcaReportSpec` output and HTML fallback
-- Use the `dashboard-design` skill for explicit HTML fallback design decisions — do not invent new styles
-- Section titles must be insight statements, not generic labels
-- Only include sections backed by actual data — never generate placeholder charts
-- If values cannot be mapped from the qluent JSON or explicit user-provided input, omit
-  the section or state the missing deterministic field/query
-- Prefer fewer, well-designed sections over many sparse ones
+- Read the data file first to verify freshness before rendering.
+- Prefer an outcome-shaped `RcaReportSpec` whenever deterministic RCA or
+  elasticity output is available.
+- Do not hand-roll report HTML when the UI contract can be used.
+- Use unique fallback HTML output paths; do not silently reuse stale dashboards.
+- Use the `dashboard-design` skill for HTML fallback styling — do not invent
+  new styles.
+- Section titles are insight statements, not generic labels.
+- Only include sections backed by actual data; omit the section or state the
+  missing deterministic field if values cannot be mapped from the JSON.
+- Prefer fewer, well-designed sections over many sparse ones.
