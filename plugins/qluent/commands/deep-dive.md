@@ -6,13 +6,14 @@ allowed-tools: Bash(which qluent), Bash(qluent *), AskUserQuestion, Read
 
 # Deep dive across metric trees
 
-Use this command when the user wants one unified answer to "what changed across the
-business?" across revenue, growth, operations, conversion funnel, and any other
-configured trees.
+Use when the user wants one unified answer to "what changed across the
+business?" across revenue, growth, operations, conversion funnel, and any
+other configured trees.
 
-This command is opt-in and can be expensive: it runs investigations across all trees in
-parallel through the deterministic qluent CLI. Do not run it from SessionStart or as an
-implicit first step.
+Opt-in and potentially expensive: runs investigations across all trees in
+parallel through the deterministic qluent CLI. Do not run from SessionStart
+or as an implicit first step. Follow the `qluent-interpretation` skill for
+provenance, window handling, and quantitative-claim rules.
 
 ## Step 1: Check CLI availability and capability
 
@@ -151,17 +152,14 @@ Rank concrete follow-up commands across trees, not just within one tree.
 
 Rules for synthesis:
 
-- Ground every material quantitative claim in the returned JSON.
 - Prefer cross-tree convergence over per-tree trivia.
 - If revenue and conversion move in opposite directions, explain the tension.
-- If operations and conversion share a segment, call out the possible operational
-  mechanism but label it as an observed relationship unless the returned data supports
-  stronger causal language.
-- If a single tree dominates the story, say that and explain whether other trees confirm,
-  contradict, or are inconclusive.
-- Separate facts, interpretation, caveats, and recommendations.
-- Keep the narrative concise by default. If `--brief` is present, use shorter bullets
-  under each heading but still include all five headings.
+- If operations and conversion share a segment, call it out as an observed
+  relationship unless the data explicitly supports causal language.
+- If a single tree dominates the story, say so and state whether other trees
+  confirm, contradict, or are inconclusive.
+- Keep concise. If `--brief` is present, use shorter bullets but still include
+  all five headings.
 
 ## Next-best drill command format
 
@@ -183,10 +181,10 @@ order. Include why each drill is recommended in one sentence.
 
 ## Rules
 
-- Always check for qluent and the `trees deep-dive` subcommand before running analysis.
-- Always call `qluent trees deep-dive --json-output --period "<period>"`.
-- Always confirm before running unless `--yes` is present.
+- Check for qluent and the `trees deep-dive` subcommand before running.
+- Confirm before running unless `--yes` is present.
 - Never auto-fire from SessionStart.
-- Never manually fan out to individual tree investigations as a fallback.
+- Never manually fan out to individual `qluent trees investigate` calls as a
+  fallback — that loses the bundled cross-tree contract.
 - Per-tree errors and low-confidence findings must appear in Caveats.
-- Recommendations must be concrete slash commands for this plugin.
+- Recommendations must be concrete `/qluent:*` slash commands.
