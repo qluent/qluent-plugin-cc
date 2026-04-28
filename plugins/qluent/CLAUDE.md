@@ -15,6 +15,7 @@ segment dimensions — use that context to tailor suggestions.
 - **Root cause analysis** with Shapley attribution — mathematically exact driver decomposition
 - **Trend analysis** — multi-period tracking with anomaly detection
 - **Tree comparison** — side-by-side mechanism validation (volume vs mix vs rate shifts)
+- **Cross-tree deep dive** — one consented executive narrative across all configured trees
 - **Segment drill-down** — find which segments concentrate a movement
 - **Sensitivity analysis** — elasticity coefficients showing which sub-metrics are the biggest levers for the root KPI
 - **Lever impact analysis** — scenario-style estimates for how +1%, +5%, or +10% changes in a sub-metric would move the root KPI
@@ -48,15 +49,17 @@ suggestions and end with a specific command, such as `/qluent:investigate revenu
 ## Commands
 
 - `/qluent:investigate` — Primary entry point. Bundles validation, trend, evaluation, and RCA in one call.
+- `/qluent:deep-dive` — Opt-in cross-tree executive read. Confirms cost, then runs `qluent trees deep-dive --json-output --period`.
 - `/qluent:trend` — Multi-period trend analysis. Use as a follow-up.
 - `/qluent:rca` — Standalone root cause analysis. Use as a follow-up.
 - `/qluent:compare` — Side-by-side tree comparison. Use as a follow-up.
 - `/qluent:visualize` — Render the latest analysis as interactive HTML charts in the browser.
 - `/qluent:setup` — Check installation and configuration.
 
-**IMPORTANT: Always start with `/qluent:investigate`.** Do NOT manually chain `trend`,
-`rca`, or `compare` as your first step. The `investigate` command bundles all of these
-into a single call. Running individual commands is slower and misses agent-level analysis.
+**IMPORTANT: Start with `/qluent:investigate` for single-tree questions and
+`/qluent:deep-dive` only when the user explicitly wants a cross-business view.** Do NOT
+manually chain `trend`, `rca`, `compare`, or separate investigations as your first step.
+The bundled commands preserve deterministic server analysis and cost consent.
 
 ## Deterministic tree-query protocol
 
@@ -139,12 +142,31 @@ qluent trees investigate ... --json-output 2>&1 | tee /tmp/qluent-viz-data.json
 
 This makes `/qluent:visualize` immediately available after any analysis.
 
+## Cross-tree deep dives
+
+Use `/qluent:deep-dive [period]` when the user asks what changed across the business,
+requests an executive overview, or wants revenue, growth, operations, and funnel context
+stitched together. It is opt-in only and must confirm before running unless the user
+passes `--yes`.
+
+The command depends on `qluent trees deep-dive` from qluent-cli#40. If the installed CLI
+does not expose that subcommand, warn and exit instead of manually fanning out to
+individual tree investigations.
+
+Synthesize the returned bundle into one narrative:
+- Headline: which root metrics moved
+- Concentration: segments that repeat across trees
+- Mechanism: volume vs basket vs conversion vs ops, backed by returned decomposition
+- Caveats: errored trees, low confidence, sparse data, skipped cuts
+- Next-best drills: ranked concrete `/qluent:*` commands across trees
+
 ## Use built-in skills, don't improvise
 
 This plugin provides purpose-built skills for common workflows. **Always use them instead of improvising.**
 
 - Charts or RCA reports → `/qluent:visualize` (prefer `RcaReportSpec`; never write custom HTML)
 - Analysis → `/qluent:investigate` (never manually chain CLI commands as a first step)
+- Cross-business executive read → `/qluent:deep-dive` (confirm cost; never auto-fire)
 - Follow-ups → `/qluent:trend`, `/qluent:rca`, `/qluent:compare`, or `qluent trees levers` (not ad-hoc scripts)
 
 The PostToolUse hook will remind you about available skills after qluent commands complete. Follow those reminders.
