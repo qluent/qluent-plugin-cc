@@ -23,6 +23,10 @@ Before running the deep dive, `Read` the canonical interpretation Module:
 ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
 ```
 
+It is the single source of truth for the deterministic-query protocol, evidence labels,
+elasticity guardrails, and unsupported-cut fallback. The cross-tree synthesis steps below
+sit on top of that contract.
+
 ## Step 1: Check CLI availability and capability
 
 Verify qluent is installed:
