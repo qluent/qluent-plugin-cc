@@ -6,9 +6,21 @@ commands for investigating business metric movements using metric trees.
 ## Be proactive
 
 When the user mentions metrics, KPIs, business performance, or seems unsure
-what to ask, offer to help. The session-start hook injects the available trees
-with their root metrics, sub-metric breakdowns, and segment dimensions — use
-that to tailor suggestions.
+what to ask, offer to help.
+
+The session-start hook (`scripts/session-start.sh`) is the canonical source for
+per-session orientation. It introspects available trees, writes the catalog file
+at `/tmp/qluent-tree-capabilities.json`, and injects:
+
+- the list of available trees with root metrics, sub-metric breakdowns, and segment dimensions
+- business-language routing hints (for example, revenue/GMV -> `revenue`, conversion/cart -> `conversion_funnel`)
+- the unsupported-cut fallback rule
+- the post-investigation visualization pointer
+
+Use that injected context to tailor suggestions instead of restating the rules.
+If the hook did not run (no qluent CLI, not authenticated, or hook timed out),
+the only reliable next step is `/qluent:setup` before trying to analyze
+anything.
 
 **Capabilities to surface:**
 - **Investigate** any metric movement — bundles validation, trend, evaluation, and RCA in one call
@@ -23,20 +35,8 @@ that to tailor suggestions.
 dimensions → segment drill-down; multiple trees → comparison; any tree → trend
 or weekly health check.
 
-**Show, don't tell**: when in doubt, run `/qluent:investigate` on the broadest
+**Show, don't tell:** when in doubt, run `/qluent:investigate` on the broadest
 tree for the latest period and present real findings.
-
-**First-run orientation**: after login or plugin reload, name the connected
-project (if the CLI reports it), list available tree ids, summarize what each
-is useful for, and offer one concrete first investigation. Use `qluent whoami`,
-`qluent status`, `qluent suggestions` only when available; do not probe
-made-up commands. Fall back to `qluent trees list --json-output`.
-
-**Business-language routing hints:**
-- sales, revenue, GMV, AOV, basket, incentives → `revenue`
-- growth, users, frequency, acquisition, reactivation → `growth`
-- delivery, late, failed, courier, ops quality → `operations`
-- conversion, checkout, cart, traffic, payment → `conversion_funnel`
 
 ## Commands
 
@@ -84,12 +84,13 @@ Synthesize the bundle into one narrative — never split into per-tree reports.
 
 - **`qluent-analyst`** — Orchestrator. Handles KPI questions autonomously and
   proactive guidance for exploratory users.
-- **`trend-interpreter`** (sonnet) — Multi-period anomalies and inflection points.
-- **`rca-validator`** (opus) — Cross-references RCA findings against trend data.
-- **`segment-explorer`** (sonnet) — Drills into top Shapley contributors.
+- **`trend-interpreter`** (sonnet) — Multi-grain trend synthesis. Runs week+month trend in one pass and returns one verdict.
+- **`rca-validator`** (opus) — RCA triangulation. Cross-references RCA findings against trend continuity and companion-tree compare.
+- **`segment-explorer`** (sonnet) — Segment drill-down with automatic companion-tree pivot for unsupported cuts.
 
 The specialized agents are launched in parallel by `investigate` or
-`qluent-analyst` for complex, broad, or low-confidence cases.
+`qluent-analyst` for complex, broad, or low-confidence cases. Each collapses
+multiple deterministic queries into one grounded answer.
 
 ## Hooks
 

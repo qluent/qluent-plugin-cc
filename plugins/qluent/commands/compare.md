@@ -1,7 +1,7 @@
 ---
 description: Compare two metric trees side-by-side to validate the mechanism behind a change
 argument-hint: "[tree1] [tree2] [--period 'last week' | --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD]"
-allowed-tools: Bash(qluent *)
+allowed-tools: Bash(qluent *), Read
 disable-model-invocation: true
 ---
 
@@ -10,6 +10,12 @@ disable-model-invocation: true
 Use as a follow-up after `/qluent:investigate`, not as a starting point.
 Resolve tree ids per the `qluent-interpretation` skill if `$ARGUMENTS` looks
 like a question rather than two tree ids.
+
+Before running the compare, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
 
 Natural-language periods:
 

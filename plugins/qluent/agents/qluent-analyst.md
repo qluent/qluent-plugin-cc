@@ -83,7 +83,7 @@ windows and synthesize both views (per the skill).
 Available follow-ups when `agent.recommended_next_steps` calls for them:
 
 ```bash
-qluent trees trend <tree_id> --periods <N> --grain <grain> --json-output
+qluent trees trend <tree_id> --periods <N> --grain <grain> --as-of <current_end> --json-output
 qluent rca analyze <tree_id> --period "<period>" --json-output
 qluent trees compare <tree1> <tree2> --period "<period>" --json-output
 qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
@@ -93,7 +93,9 @@ For broad time ranges (quarter+), the server may recommend companion-tree
 investigations and monthly trends — follow those.
 
 For complex cases, the server may recommend launching `trend-interpreter`,
-`rca-validator`, or `segment-explorer` in parallel.
+`rca-validator`, or `segment-explorer` in parallel. These agents synthesize
+multiple deterministic queries into one answer: multi-grain trend verdict,
+RCA+trend+compare triangulation, or segment pivot-and-synthesis.
 
 ### Step 4: Synthesize and suggest
 

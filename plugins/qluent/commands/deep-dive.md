@@ -15,6 +15,14 @@ parallel through the deterministic qluent CLI. Do not run from SessionStart
 or as an implicit first step. Follow the `qluent-interpretation` skill for
 provenance, window handling, and quantitative-claim rules.
 
+## Step 0: Load the canonical interpretation protocol
+
+Before running the deep dive, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
+
 ## Step 1: Check CLI availability and capability
 
 Verify qluent is installed:

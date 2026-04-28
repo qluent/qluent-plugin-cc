@@ -13,6 +13,14 @@ only on `--simple`/`--html`, an explicit local/browser request, or when the
 UI contract cannot be consumed. Follow the `qluent-interpretation` skill for
 provenance and evidence labels.
 
+## Step 0: Load the canonical interpretation protocol
+
+Before shaping a report, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
+
 ## Step 1: Locate and validate the data
 
 By default, read from `/tmp/qluent-viz-data.json`. If the user provides `--file <path>`, use

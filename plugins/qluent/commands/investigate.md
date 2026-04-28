@@ -13,6 +13,14 @@ Follow the `qluent-interpretation` skill for tree resolution, window handling,
 provenance, Shapley/confidence interpretation, elasticity guardrails, and the
 unsupported-cut fallback. Do not invent metric math.
 
+## Step 0: Load the canonical interpretation protocol
+
+Before proceeding, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
+
 ## Step 1: Question vs tree id
 
 If `$ARGUMENTS` is empty, ends with `?`, contains spaces, or contains words
@@ -24,7 +32,7 @@ and resolve a tree (Step 2). If it is a single token (`revenue`, `roas`,
 
 Run `qluent trees list --json-output` and pick the best fit per the tree
 resolution rules in the `qluent-interpretation` skill. If no tree is a clear
-winner, ask with `AskUserQuestion`.
+winner, ask the user to choose from the top candidates.
 
 ## Step 3: Resolve windows
 

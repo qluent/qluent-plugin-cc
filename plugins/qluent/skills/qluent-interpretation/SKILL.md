@@ -1,7 +1,7 @@
 ---
 name: qluent-interpretation
-description: Canonical protocol for interpreting qluent CLI output — tree resolution, windows, provenance, Shapley, elasticity guardrails, and segment-cut fallback. Referenced by every qluent command and agent; do not duplicate these rules elsewhere.
-user-invocable: false
+description: Canonical protocol for interpreting qluent CLI output — tree resolution, windows, provenance, Shapley, elasticity guardrails, and segment-cut fallback. Loaded by qluent commands and agents; user-invocable for protocol inspection.
+user-invocable: true
 ---
 
 # Qluent interpretation protocol
@@ -26,8 +26,9 @@ client-side before any quantitative call.
    - nouns that match a tree label (e.g. "revenue" → revenue tree)
    - concepts that match a child node label (e.g. "spend efficiency" → roas)
    - dimensions named in the question (e.g. "by country" → tree declaring `country`)
-3. If no tree is a clear winner, ask the user with `AskUserQuestion`, listing
-   the top 2–3 candidates with labels and descriptions. Do not guess silently.
+3. If no tree is a clear winner, ask the user to choose from the top 2–3
+   candidates with labels and descriptions. Use `AskUserQuestion` only when
+   the caller has that tool; otherwise ask in plain text. Do not guess silently.
 
 Always pass an explicit `<tree_id>` to every qluent subcommand. Always use
 `--json-output`.
@@ -41,7 +42,8 @@ user changed it.
 - Natural-language periods: `--period "last week"`.
 - Explicit windows: `--current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD`.
 - If the user gave neither, default to `--period "last week"` for `investigate`
-  and ask via `AskUserQuestion` for `deep-dive`.
+  and ask for a period before `deep-dive`. Use `AskUserQuestion` only when the
+  caller has that tool; otherwise ask in plain text.
 
 When current and comparison windows have different day counts, surface that as
 a caveat near the headline.

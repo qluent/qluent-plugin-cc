@@ -1,7 +1,7 @@
 ---
 description: Run standalone deterministic root cause analysis on a metric tree
 argument-hint: "[tree-name] [--period 'last week' | --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD]"
-allowed-tools: Bash(qluent *)
+allowed-tools: Bash(qluent *), Read
 disable-model-invocation: true
 ---
 
@@ -10,6 +10,12 @@ disable-model-invocation: true
 Use as a follow-up after `/qluent:investigate`, not as a starting point.
 Follow the `qluent-interpretation` skill for tree resolution, window reuse,
 provenance, and Shapley/confidence interpretation.
+
+Before running RCA, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
 
 ## Step 1: Resolve tree and window
 
