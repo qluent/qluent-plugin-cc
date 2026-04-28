@@ -224,6 +224,7 @@ fi
 # Contextual follow-up suggestions
 if $is_investigate; then
   echo "  → Follow-up skills: /qluent:visualize (RcaReportSpec/charts), /qluent:rca (root cause), /qluent:trend (multi-period), /qluent:compare (cross-tree)"
+  echo "  → Report options: RCA report, mix-shift report when segment/mix effects exist, or elasticity report for a selected lever/outcome."
 fi
 
 if $is_trend || $is_rca || $is_compare; then
