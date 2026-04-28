@@ -77,11 +77,7 @@ The goal is to get the user into analysis immediately after setup, not leave the
 ## Output
 
 Present a summary:
-- Plugin: qluent 0.3.1 (prompt 2026-04-28-rspec-strict)
 - Installation: installed / not installed
 - Authentication: configured / not configured
 - Metric trees: N available (with descriptions and what each can answer)
 - Suggested first question based on available trees
-
-Always echo the plugin version line verbatim so dogfood transcripts capture
-which prompt bundle Claude loaded.
