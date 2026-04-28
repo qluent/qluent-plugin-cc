@@ -1,6 +1,6 @@
 ---
-description: Shape the latest qluent analysis output into a UI report spec, with HTML charts as a local fallback
-argument-hint: "[--file /path/to/json] [--simple]"
+description: Shape the latest qluent analysis output into a UI RcaReportSpec, with gated HTML fallback
+argument-hint: "[--file /path/to/json] [--simple] [--html]"
 allowed-tools: Bash(*), Read, Write, Glob
 ---
 
@@ -8,8 +8,9 @@ allowed-tools: Bash(*), Read, Write, Glob
 
 Shapes the most recent qluent analysis into an outcome-shaped `RcaReportSpec` for the
 Qluent UI. When deterministic RCA or elasticity output is available, the report spec is
-the primary artifact. Use the local HTML renderer only as a fallback for quick demos,
-basic data, or when the UI report contract cannot be consumed.
+the required primary artifact. Use local HTML only when the user explicitly requests a
+local/browser demo, passes `--simple` or `--html`, or the UI report contract cannot be
+consumed.
 
 ## Step 1: Locate and validate the data
 
@@ -22,10 +23,10 @@ data looks stale (wrong tree, old dates), warn the user and suggest re-running i
 
 ## Step 2: Choose report mode
 
-**Report spec mode** (default for deterministic RCA/elasticity output): Produce or request
-an outcome-shaped `RcaReportSpec` with `outcomeShape`, ordered `sections[]`, `caveats`,
-and `sources`. Use this when the JSON contains `root_cause`, `evaluation`, `levers`,
-`agent.recommended_next_steps`, `mix_shift`, or segment findings.
+**Report spec mode** (strict default for deterministic RCA/elasticity output): Produce or
+request an outcome-shaped `RcaReportSpec` with `outcomeShape`, ordered `sections[]`,
+`caveats[]`, and `sources[]`. Use this when the JSON contains `root_cause`, `evaluation`,
+`levers`, `agent.recommended_next_steps`, `mix_shift`, or segment findings.
 
 Do not hand-roll report HTML when the UI report contract can be used. Preserve the
 deterministic qluent values and provenance in the spec instead of translating findings
@@ -35,12 +36,14 @@ The preferred output is a JSON-like report artifact that the UI can consume dire
 Include raw qluent values, stable section `type` values, caveats, and sources; do not
 replace them with prose-only summaries or Chart.js configuration.
 
-When a user asks for a report after `/qluent:investigate`, emit or request this
-`RcaReportSpec` first. Only switch to local HTML after the user explicitly asks for a
-browser-only fallback or the UI contract is unavailable.
+When a user asks for a visualization, chart, dashboard, or report after
+`/qluent:investigate`, emit or request this `RcaReportSpec` first. Only switch to local
+HTML after the user explicitly asks for a local HTML dashboard, browser-only demo,
+`--simple`, `--html`, or the UI contract is unavailable.
 
-**Simple mode** (`--simple` flag or no investigation context): Use the generic render script
-for a quick chart. This is the fallback for basic data or when the user just wants something fast.
+**Simple mode** (`--simple` flag or no investigation context): Use the generic render
+script for a quick local chart. This is a fallback for basic data or deliberate simple
+mode, not the synchronized RCA report artifact.
 Use a unique output path so stale `/tmp/qluent-viz.html` files do not collide with new runs:
 
 ```bash
@@ -49,11 +52,11 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" /tmp/qluent-viz-data.json 
 echo "Rendered Qluent report fallback: $out"
 ```
 
-**HTML fallback mode** (local demo only): Generate a custom HTML dashboard driven by the
-analysis findings when the user explicitly asks for browser-rendered charts or the UI
-report contract is unavailable. Prefer the renderer script and a unique
-`/tmp/qluent-viz-<timestamp>.html` path; only overwrite an existing file after reading it
-and confirming that the user wants to update that exact file.
+**HTML fallback mode** (`--html`, explicit local/browser demo request, or unavailable UI
+contract only): Prefer `render-charts.sh` and a unique `/tmp/qluent-viz-<timestamp>.html`
+path. If custom HTML is unavoidable, drive it only from values present in the qluent JSON
+or explicit user-provided values. Do not invent, infer, or hardcode chart values from
+conversation context.
 
 ## Step 3: Build an outcome-shaped RcaReportSpec
 
@@ -129,91 +132,16 @@ Every material section must preserve deterministic provenance:
 
 ## Step 4: HTML fallback for local demos
 
-Read the JSON data and determine which sections to include based on what evidence is present.
-Reference the `dashboard-design` skill for the design system (tokens, components, Chart.js
-config, section templates).
+Do not enter this step for normal deterministic RCA or elasticity visualization requests.
+HTML is a local fallback, not the synchronized report artifact.
 
-### Section selection logic
+Read the JSON data and include only sections whose values map directly from qluent JSON.
+If a value needed for a chart cannot be mapped from the JSON, omit that section or state
+the missing deterministic field/query instead of inventing a placeholder chart.
 
-Scan the JSON and include sections based on available data:
-
-1. **Hero** (always): Pull tree label, period, delta, and `agent.top_findings` into a
-   narrative headline. Frame the headline as an insight ("Revenue +2.7% but the growth has
-   cracks") not a label ("Revenue Analysis").
-
-2. **KPI strip** (always): Root metric value + delta, plus top 3-4 child metrics from
-   `evaluation.top_contributors` or key nodes.
-
-3. **Trend** (if `trend.evaluations` has 3+ periods): Line chart of root value over time
-   with WoW % change bars on secondary axis.
-
-4. **Shapley attribution** (if `evaluation.nodes` has formula with contributions):
-   Horizontal bar chart showing each child's effect on the parent. Focus on the most
-   interesting decomposition (e.g., Orders vs AOV for a product formula, not just
-   top-level gross vs incentive).
-
-5. **Mix shift / segment breakdown** (if `root_cause.mix_shift` or `findings[].segment_findings`
-   exist): Grouped bars showing current vs comparison by segment, plus a baseline vs mix
-   effect decomposition chart if mix_shift data is available.
-
-6. **Funnel steps** (if tree is a conversion funnel with step rates): Bar chart of rate
-   changes per step. If segment findings show a vertical or platform concentration, add a
-   horizontal bar breakdown of the worst-performing step by segment.
-
-7. **Cross-tree comparison** (if comparison data from multiple trees is available in the
-   conversation context): Side-by-side stat blocks or dual charts. Include this when the
-   user ran `/qluent:compare` or the investigation recommended cross-tree validation.
-
-8. **Operations / quality** (if operations metrics are present): Stat block trio for
-   delivery quality, failure rates, or similar operational KPIs.
-
-9. **Lever priorities** (if `levers.top_levers` exists): Priority table with columns for
-   rank, lever name, elasticity, current trend, +5% scenario impact, and action type
-   (FIX/GROW/INVEST tags based on whether the metric is declining, growing, or strategic).
-
-10. **Insight callouts**: Add contextual annotations below relevant charts using the
-    `.insight`, `.insight-warn`, or `.insight-bad` classes. Pull from
-    `root_cause.conclusion.takeaways` and `agent.top_findings`.
-
-### Building the HTML
-
-Write the complete dashboard to a fresh fallback path such as
-`/tmp/qluent-viz-<timestamp>.html`:
-
-- Use the design tokens, fonts, and Chart.js defaults from the `dashboard-design` skill
-- Include the Qluent logo SVG in the sticky topbar
-- Number each section sequentially (01, 02, 03...)
-- Use insight-driven section titles (statements, not labels)
-- All data values should use `var(--font-mono)` font family
-- Color positive deltas green, negative red
-- Make it responsive with the 768px breakpoint
-- Include a visible period-length caveat when current and comparison windows have
-  different day counts. If normalized deltas are present in the JSON, show them; if not,
-  state that normalized delta evidence was not returned.
-
-### Data extraction patterns
-
-```js
-// Root metric
-const root = data.evaluation.nodes.find(n => n.parent_id === null);
-
-// Trend periods (from investigate bundle)
-const periods = data.trend.evaluations; // array of period evaluations
-
-// Shapley contributions for a node
-const node = data.evaluation.nodes.find(n => n.id === 'product_gmv');
-const effects = node.contributions; // or find in root_cause.findings[].formula_analysis.effects
-
-// Mix shift
-const mix = data.root_cause.mix_shift; // { dimension, segments[] }
-
-// Segment findings for a node
-const finding = data.root_cause.findings.find(f => f.node_id === 'net_revenue');
-const segments = finding.segment_findings;
-
-// Levers
-const levers = data.levers.top_levers;
-```
+For simple local output, run `render-charts.sh`. If custom HTML is explicitly requested
+and unavoidable, reference the `dashboard-design` skill for styling and keep every chart
+bound to deterministic fields from `/tmp/qluent-viz-data.json` or `--file <path>`.
 
 ## Step 5: Open fallback HTML in browser
 
@@ -234,9 +162,9 @@ xdg-open "$out"
 - Preserve deterministic provenance, caveats, date windows, materiality, and evidence labels
 - Use unique fallback HTML output paths; do not silently reuse stale dashboards
 - Preserve period comparability caveats in both `RcaReportSpec` output and HTML fallback
-- Use the `dashboard-design` skill for all design decisions — do not invent new styles
+- Use the `dashboard-design` skill for explicit HTML fallback design decisions — do not invent new styles
 - Section titles must be insight statements, not generic labels
 - Only include sections backed by actual data — never generate placeholder charts
-- If the conversation includes cross-tree comparison or follow-up RCA data beyond what's
-  in the JSON file, incorporate that data into the dashboard by hardcoding the values
+- If values cannot be mapped from the qluent JSON or explicit user-provided input, omit
+  the section or state the missing deterministic field/query
 - Prefer fewer, well-designed sections over many sparse ones

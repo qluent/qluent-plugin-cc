@@ -125,9 +125,12 @@ Preserve deterministic provenance, exact date windows, materiality, caveats, and
 CLI/UI evidence labels: `observed_correlation`, `historical_elasticity`,
 `model_estimate`, and `experiment_backed`.
 
-For quick local demos or basic data, `/qluent:visualize` may still use the styled
-dashboard renderer (`render-charts.sh`) with the Qluent design system. Never write
-custom HTML, CSS, or Chart.js code by hand.
+Only use local HTML when the user explicitly asks for a local/browser demo, passes
+`--simple` or `--html`, or the UI report contract is unavailable. Prefer the styled
+dashboard renderer (`render-charts.sh`) for those fallback cases. Never write custom
+HTML, CSS, or Chart.js code by hand for normal deterministic RCA or elasticity reports.
+If values cannot be mapped from the qluent JSON or explicit user input, omit the section
+or state the missing deterministic field/query instead of inventing a chart.
 
 After a successful investigation, offer outcome-shaped report follow-ups when the data
 supports them: an RCA report for driver decomposition, a mix-shift report when segment
