@@ -84,6 +84,33 @@ Requires a qluent CLI release that includes `qluent trees deep-dive` from
 `qluent-cli#40`. Older CLIs are detected and the command exits with an upgrade warning
 instead of falling back to separate tree investigations.
 
+## Verifying the installed prompt bundle
+
+Every release tags the prompt bundle with a `promptVersion` marker so dogfood
+transcripts can prove which version Claude actually loaded. Current marker:
+
+```
+plugin 0.3.1 | prompt 2026-04-28-rspec-strict
+```
+
+The session-start hook prints this line on every Claude Code launch, and
+`/qluent:setup` echoes it in its summary. To verify by hand:
+
+```bash
+claude plugin list
+# qluent@qluent-metric-trees should show Version: 0.3.1
+
+grep -r "2026-04-28-rspec-strict" ~/.claude/plugins/installed
+```
+
+If the installed bundle still reports `0.3.0` or the marker is missing, the
+marketplace cache is stale. Refresh with:
+
+```
+/plugin marketplace update qluent/qluent-plugin-cc
+/reload-plugins
+```
+
 ## License
 
 MIT

@@ -11,6 +11,8 @@ fi
 
 [ -n "$python_bin" ] || exit 0
 
+echo "[Qluent] plugin 0.3.1 | prompt 2026-04-28-rspec-strict"
+
 # Check if qluent is available
 if ! command -v qluent &>/dev/null; then
   cat <<'EOF'
