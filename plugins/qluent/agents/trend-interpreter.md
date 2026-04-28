@@ -22,14 +22,16 @@ A single-grain trend call (just weekly, or just monthly) is ambiguous: a weekly 
 
 ## Workflow
 
+Anchor the trend overlay to the investigated window. If the caller supplied explicit `--current <start>:<end>` / `--compare <start>:<end>` windows, derive `<current_end>` from the end of the current window and pass it as `--as-of` to both grains. If the caller supplied only a natural-language `period`, pass that same period consistently when the CLI supports it; otherwise ask the caller for explicit windows before producing a verdict.
+
 Run both grain calls in parallel from a single shell turn when possible:
 
 ```bash
-qluent trees trend <tree_id> --periods 8 --grain week --json-output
-qluent trees trend <tree_id> --periods 6 --grain month --json-output
+qluent trees trend <tree_id> --periods 8 --grain week --as-of <current_end> --json-output
+qluent trees trend <tree_id> --periods 6 --grain month --as-of <current_end> --json-output
 ```
 
-Use `--as-of` consistently across both calls when provided. If the CLI rejects either grain, report which grain ran and proceed with the partial overlay.
+Use `--as-of` consistently across both calls when provided or derived. If the CLI rejects either grain, report which grain ran and proceed with the partial overlay. If the trend result does not cover the investigated window, mark the verdict `inconclusive` instead of validating a different period.
 
 ## Synthesis
 

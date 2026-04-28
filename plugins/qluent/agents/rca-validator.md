@@ -22,15 +22,15 @@ Validating RCA properly takes three deterministic queries: the RCA itself, a tre
 
 ## Workflow
 
-Run the three legs for the same windows. Prefer parallel invocation in a single shell turn:
+Run the three legs for the same windows. For explicit windows, derive `<current_end>` from `--current <start>:<end>` and anchor the trend leg with `--as-of <current_end>` so it validates the same investigated window as the RCA and compare legs. Prefer parallel invocation in a single shell turn:
 
 ```bash
 qluent rca analyze <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
-qluent trees trend <tree_id> --periods 6 --grain week --json-output
+qluent trees trend <tree_id> --periods 6 --grain week --as-of <current_end> --json-output
 qluent trees compare <tree_id> <companion_tree_id> --current <start>:<end> --compare <start>:<end> --json-output
 ```
 
-If the upstream caller already has fresh RCA JSON for the exact same windows, accept it as input and skip the RCA leg. Always rerun the compare and trend legs unless the caller passes them in.
+If the upstream caller already has fresh RCA JSON for the exact same windows, accept it as input and skip the RCA leg. Always rerun the compare and trend legs unless the caller passes them in. If the trend output does not cover the RCA current window, treat the trend leg as missing and avoid confirming or contradicting drivers from unrelated periods.
 
 ## Triangulation
 
