@@ -64,7 +64,11 @@ qluent trees investigate <tree_id> --current YYYY-MM-DD:YYYY-MM-DD --compare YYY
 
 The response includes an `agent` section with `status`, `top_findings`, `gaps`, and `recommended_next_steps`. The `levers` section contains embedded elasticity/lever data when available. Follow the server's recommendations to determine what to do next — run the suggested follow-up commands before inventing your own.
 
-For complex cases, the server may recommend launching specialized agents (`trend-interpreter`, `rca-validator`, `segment-explorer`) in parallel.
+For complex cases, dispatch specialized agents in parallel. Each one returns a triangulated verdict from multiple deterministic queries in a single call:
+
+- `trend-interpreter` — multi-grain (week+month) one-off vs sustained verdict.
+- `rca-validator` — RCA cross-referenced against trend continuity and a companion-tree compare for the same windows.
+- `segment-explorer` — segment drill-down with automatic pivot to a compatible companion tree when the requested cut is unsupported.
 
 ## Step 6: Summarize and suggest next steps
 

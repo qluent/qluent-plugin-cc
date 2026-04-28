@@ -108,7 +108,11 @@ qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --
 
 For broad time ranges (quarter+), the server may recommend companion tree investigations and monthly trends. Follow those recommendations.
 
-For complex cases, the server may recommend launching specialized agents (`trend-interpreter`, `rca-validator`, `segment-explorer`) in parallel.
+For complex cases, dispatch specialized agents in parallel — each collapses several deterministic queries into one triangulated verdict so you don't have to reconcile them yourself:
+
+- `trend-interpreter` for multi-grain disambiguation (week+month → one-off vs sustained vs drift vs artifact).
+- `rca-validator` for top-driver triangulation (RCA + trend + companion compare → confirmed/partial/contradicted/inconclusive per driver).
+- `segment-explorer` for segment cuts that may be unsupported on the current tree (auto-pivot to a compatible companion and synthesize both views).
 
 ### Step 4: Synthesize and suggest
 

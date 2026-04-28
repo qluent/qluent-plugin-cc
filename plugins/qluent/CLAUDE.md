@@ -99,12 +99,14 @@ For unsupported segment cuts or breakdown requests:
 ## Agents
 
 - **`qluent-analyst`** — Orchestrator agent. Handles KPI questions autonomously: investigate, follow up, synthesize. **Also handles proactive guidance** — when users are exploratory or ask what's available, it runs a lightweight analysis and suggests follow-ups tailored to the configured trees.
-- **`trend-interpreter`** (sonnet) — Analyzes multi-period trends for anomalies, seasonal patterns, and inflection points.
-- **`rca-validator`** (opus) — Cross-references RCA findings against trend data to confirm or refute top drivers.
-- **`segment-explorer`** (sonnet) — Drills into top Shapley contributors to find which segments concentrate the movement.
+- **`trend-interpreter`** (sonnet) — Multi-grain trend synthesis. Runs week+month trend in one pass and returns a single verdict (one-off, sustained, pre-existing drift, aggregation artifact) instead of two trend reports to reconcile.
+- **`rca-validator`** (opus) — RCA triangulation. Cross-references each top driver against trend continuity AND a companion-tree compare for the same windows in one pass, returning one verdict per driver (confirmed / partial / contradicted / inconclusive).
+- **`segment-explorer`** (sonnet) — Segment drill-down with automatic companion-tree pivot. When the requested cut is unsupported on the current tree, finds the closest compatible companion via the cached tree catalog, runs the segmentation there, and synthesizes both views in one call.
 
-The specialized agents (trend-interpreter, rca-validator, segment-explorer) are launched
-in parallel by the investigate command or qluent-analyst for complex, broad, or low-confidence cases.
+The specialized agents are launched in parallel by the investigate command or qluent-analyst
+for complex, broad, or low-confidence cases. Each one collapses two or three deterministic
+queries into a single triangulated answer, so the orchestrator's context stays narrow while
+the verdict is fully grounded.
 
 ## Visualization and reporting
 
