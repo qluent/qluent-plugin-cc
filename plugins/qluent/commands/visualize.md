@@ -84,7 +84,10 @@ Build `sections[]` in the order that best tells the returned story, using only s
 backed by actual qluent fields:
 
 1. `root_movement`: root metric, current/comparison windows, absolute and percentage
-   movement, tree id/label, and any server-provided period labels.
+   movement, per-day normalized movement when available, tree id/label, and any
+   server-provided period labels. If current and comparison windows have different day
+   counts, add a caveat near the headline/root movement. Use deterministic normalized
+   delta fields if returned; otherwise state that the normalized field/query is missing.
 2. `driver_decomposition`: RCA driver findings, direct contributors, Shapley effects,
    materiality, confidence/evidence coverage, and supporting takeaways.
 3. `material_segment_scan`: `root_cause.findings[].segment_findings` and material
@@ -105,7 +108,8 @@ Every material section must preserve deterministic provenance:
   dimension/value when present, exact current/comparison windows, materiality, and
   confidence/evidence coverage.
 - Carry caveats from returned `gaps`, low confidence, sparse samples, missing dimensions,
-  unsupported cuts, guardrail warnings, or stale windows into top-level `caveats[]`.
+  unsupported cuts, guardrail warnings, stale windows, or unequal current/comparison
+  period lengths into top-level `caveats[]`.
 - Carry result references and data lineage into `sources[]`; do not cite unstated data.
 - Use CLI/UI evidence labels exactly when present: `observed_correlation`,
   `historical_elasticity`, `model_estimate`, and `experiment_backed`.
@@ -170,6 +174,9 @@ Write the complete dashboard to `/tmp/qluent-viz.html`:
 - All data values should use `var(--font-mono)` font family
 - Color positive deltas green, negative red
 - Make it responsive with the 768px breakpoint
+- Include a visible period-length caveat when current and comparison windows have
+  different day counts. If normalized deltas are present in the JSON, show them; if not,
+  state that normalized delta evidence was not returned.
 
 ### Data extraction patterns
 
@@ -212,6 +219,7 @@ xdg-open /tmp/qluent-viz.html
   whenever deterministic RCA or elasticity output is available
 - Do not hand-roll report HTML when the UI report contract can be used
 - Preserve deterministic provenance, caveats, date windows, materiality, and evidence labels
+- Preserve period comparability caveats in both `RcaReportSpec` output and HTML fallback
 - Use the `dashboard-design` skill for all design decisions — do not invent new styles
 - Section titles must be insight statements, not generic labels
 - Only include sections backed by actual data — never generate placeholder charts
