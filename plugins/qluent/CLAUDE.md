@@ -63,6 +63,8 @@ The bundled commands preserve deterministic server analysis and cost consent.
 
 ## Deterministic tree-query protocol
 
+The canonical Module is `skills/qluent-interpretation/SKILL.md`. Qluent slash commands `Read` it at the top of their workflow, and qluent agents load it via `skills:` frontmatter. Treat the bullets below as a contract reminder; the skill is normative.
+
 All metric values, deltas, decompositions, segment rankings, elasticity estimates, and recommendations based on numbers must be grounded in deterministic qluent JSON.
 
 - Resolve tree context before querying. If the user asks a question, use session tree context or `qluent trees list --json-output` and pass an explicit tree id.

@@ -14,6 +14,18 @@ This command is opt-in and can be expensive: it runs investigations across all t
 parallel through the deterministic qluent CLI. Do not run it from SessionStart or as an
 implicit first step.
 
+## Step 0: Load the canonical interpretation protocol
+
+Before running the deep dive, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
+
+It is the single source of truth for the deterministic-query protocol, evidence labels,
+elasticity guardrails, and unsupported-cut fallback. The cross-tree synthesis steps below
+sit on top of that contract.
+
 ## Step 1: Check CLI availability and capability
 
 Verify qluent is installed:

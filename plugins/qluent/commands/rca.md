@@ -1,7 +1,7 @@
 ---
 description: Run standalone deterministic root cause analysis on a metric tree
 argument-hint: "[tree-name] [--period 'last week' | --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD]"
-allowed-tools: Bash(qluent *)
+allowed-tools: Bash(qluent *), Read
 disable-model-invocation: true
 ---
 
@@ -10,6 +10,16 @@ disable-model-invocation: true
 Use this as a follow-up after `/qluent:investigate`, not as a starting point.
 
 If `$ARGUMENTS` looks like a question rather than a tree id, run `qluent trees list --json-output`, pick the best-fitting tree from the list (match against tree label, child node labels, and declared dimensions), and re-run with that tree id. If no tree is a clear fit, ask the user to choose from the top candidates. Quantitative RCA claims require returned `qluent rca analyze` JSON for the selected tree/window.
+
+## Step 0: Load the canonical interpretation protocol
+
+Before running RCA, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
+
+It is the single source of truth for the deterministic-query protocol, evidence labels, and elasticity guardrails. The steps below are a workflow on top of that contract — the skill itself is normative.
 
 ## Step 1: Resolve tree and window deterministically
 

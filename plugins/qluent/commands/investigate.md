@@ -10,6 +10,16 @@ This is the primary entry point for all metric analysis. It bundles validation, 
 
 The qluent server is deterministic — it does NOT match natural-language questions to trees. YOU pick which tree to analyze when the user asks a question, by listing trees and matching against their metadata.
 
+## Step 0: Load the canonical interpretation protocol
+
+Before proceeding, `Read` the canonical interpretation Module:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+```
+
+It is the single source of truth for the deterministic-query protocol, evidence labels, elasticity guardrails, and the unsupported-cut fallback rule. The summary below is a contract reminder; the skill is normative.
+
 ## Deterministic query contract
 
 - Resolve tree context before analysis. Do not let natural language stand in for a tree id.
