@@ -6,9 +6,21 @@ for investigating business metric movements using metric trees.
 ## Be proactive
 
 **Don't wait for a perfect question.** When a user mentions metrics, KPIs, business
-performance, or seems unsure what to ask, proactively offer to help. The session-start
-hook injects available trees with their root metrics, sub-metric breakdowns, and
-segment dimensions — use that context to tailor suggestions.
+performance, or seems unsure what to ask, proactively offer to help.
+
+The session-start hook (`scripts/session-start.sh`) is the canonical source for
+per-session orientation. It introspects available trees, writes the catalog file at
+`/tmp/qluent-tree-capabilities.json`, and injects:
+
+- the list of available trees with root metrics, sub-metric breakdowns, and segment dimensions
+- business-language routing hints (e.g. revenue/GMV → `revenue`, conversion/cart → `conversion_funnel`)
+- the unsupported-cut fallback rule
+- the post-investigation visualization pointer
+
+Use that injected context to tailor suggestions instead of restating the rules. **If the
+hook didn't run** (no qluent CLI, not authenticated, or hook timed out), the only
+reliable next step is `/qluent:setup` — point the user there before trying to analyze
+anything.
 
 **Capabilities** (use these to explain what you can do):
 - **Investigate** any metric movement — bundles validation, trend, evaluation, and root cause in one call
@@ -29,22 +41,9 @@ segment dimensions — use that context to tailor suggestions.
 **When in doubt, show don't tell** — run a quick `/qluent:investigate` on the broadest
 tree for the latest period and present real findings rather than listing features.
 
-**First-run orientation:** after login or plugin reload, orient the user from available
-tree metadata. Name the connected project if the CLI reports it, list the available tree
-ids, summarize what each tree is useful for, and offer one concrete first investigation.
-Use `qluent whoami`, `qluent status`, and `qluent suggestions` only when those commands
-are available. Do not probe made-up commands such as `qluent projects list`; if a command
-is unsupported, fall back to `qluent trees list --json-output` and the session-start
-tree context.
-
-**Business-language routing hints:**
-- sales, revenue, GMV, AOV, basket, incentives -> `revenue`
-- growth, users, frequency, acquisition, reactivation -> `growth`
-- delivery, late, failed, courier, ops quality -> `operations`
-- conversion, checkout, cart, traffic, payment -> `conversion_funnel`
-
-When the user asks what they can do, turn available tree metadata into project-specific
-suggestions and end with a specific command, such as `/qluent:investigate revenue last month`.
+When the user asks what they can do, turn the hook's injected tree metadata into
+project-specific suggestions and end with a specific command, such as
+`/qluent:investigate revenue last month`.
 
 ## Commands
 
