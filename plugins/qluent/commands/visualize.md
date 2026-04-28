@@ -31,6 +31,14 @@ Do not hand-roll report HTML when the UI report contract can be used. Preserve t
 deterministic qluent values and provenance in the spec instead of translating findings
 into one-off dashboard markup.
 
+The preferred output is a JSON-like report artifact that the UI can consume directly.
+Include raw qluent values, stable section `type` values, caveats, and sources; do not
+replace them with prose-only summaries or Chart.js configuration.
+
+When a user asks for a report after `/qluent:investigate`, emit or request this
+`RcaReportSpec` first. Only switch to local HTML after the user explicitly asks for a
+browser-only fallback or the UI contract is unavailable.
+
 **Simple mode** (`--simple` flag or no investigation context): Use the generic render script
 for a quick chart. This is the fallback for basic data or when the user just wants something fast.
 
