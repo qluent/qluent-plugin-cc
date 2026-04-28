@@ -1,7 +1,5 @@
 # Qluent Metric Trees
 
-Prompt version: 2026-04-28-rspec-strict (plugin 0.3.1)
-
 Deterministic KPI analysis from the command line. This plugin provides slash
 commands for investigating business metric movements using metric trees.
 
