@@ -58,6 +58,9 @@ assert_not_contains "$ROOT/plugins/qluent/commands/deep-dive.md" '/qluent:compar
 assert_not_contains "$ROOT/plugins/qluent/scripts/post-bash.sh" '/qluent:trend'
 assert_not_contains "$ROOT/plugins/qluent/scripts/post-bash.sh" '/qluent:rca'
 assert_not_contains "$ROOT/plugins/qluent/scripts/post-bash.sh" '/qluent:compare'
+assert_not_contains "$ROOT/plugins/qluent/skills/qluent-interpretation/SKILL.md" '/qluent:trend'
+assert_not_contains "$ROOT/plugins/qluent/skills/qluent-interpretation/SKILL.md" '/qluent:rca'
+assert_not_contains "$ROOT/plugins/qluent/skills/qluent-interpretation/SKILL.md" '/qluent:compare'
 
 # 5. Agents still own the underlying CLI subcommand surface — that's why the
 #    slash commands could be deleted without losing capability.
