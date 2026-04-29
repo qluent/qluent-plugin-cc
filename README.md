@@ -55,32 +55,17 @@ bundled response calls for them.
 
 ## Cross-tree deep dives
 
-`/qluent:deep-dive [period]` calls:
-
-```bash
-qluent trees deep-dive --json-output --period "<period>"
-```
-
-The CLI runs investigations across all configured trees in parallel and returns one
-bundled JSON payload. Claude then synthesizes the bundle into a single narrative with:
-
-- **Headline** — which root metrics moved
-- **Concentration** — segments that show up across trees
-- **Mechanism** — whether the movement looks like volume, basket, conversion, mix,
-  operational quality, cost, margin, or timing
-- **Caveats** — errored trees, skipped cuts, low confidence, or sparse data
-- **Next-best drills** — ranked, copy-pasteable `/qluent:*` follow-up commands
-
-Because this can run several investigations at once, the command confirms before
-execution. Use `--yes` for autonomous mode after you have decided the cost is acceptable:
+`/qluent:deep-dive [period]` runs investigations across every configured tree
+in parallel and returns one bundled narrative. It confirms cost before
+running unless you pass `--yes`:
 
 ```bash
 /qluent:deep-dive "last week" --yes
 ```
 
 Requires a qluent CLI release that includes `qluent trees deep-dive` from
-`qluent-cli#40`. Older CLIs are detected and the command exits with an upgrade warning
-instead of falling back to separate tree investigations.
+`qluent-cli#40`. See `/qluent:deep-dive` for the full workflow contract,
+including the synthesis shape and per-tree caveat handling.
 
 ## License
 
