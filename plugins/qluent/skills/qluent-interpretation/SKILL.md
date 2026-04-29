@@ -30,8 +30,8 @@ client-side before any quantitative call.
    candidates with labels and descriptions. Use `AskUserQuestion` only when
    the caller has that tool; otherwise ask in plain text. Do not guess silently.
 
-Always pass an explicit `<tree_id>` to every qluent subcommand. Always use
-`--json-output`.
+Always pass an explicit `<tree_id>` to every qluent subcommand.
+Always use `--json-output`.
 
 ## Windows
 

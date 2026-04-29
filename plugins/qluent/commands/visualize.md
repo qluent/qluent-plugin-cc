@@ -127,14 +127,13 @@ backed by actual qluent fields:
 ### Provenance and evidence labels
 
 Every material section preserves provenance per the `qluent-interpretation`
-skill: command/result type, tree id/label, node id/label, segment
-dimension/value, exact current/comparison windows, materiality, and
-confidence/evidence coverage. Carry returned caveats (gaps, low confidence,
-sparse samples, missing dimensions, unsupported cuts, guardrail warnings,
-stale or unequal-length windows) into top-level `caveats[]`. Carry result
-references and data lineage into `sources[]`. Use returned evidence labels
-exactly when present: `observed_correlation`, `historical_elasticity`,
-`model_estimate`, `experiment_backed`.
+skill, mapped into the spec: per-section `data` carries command/result type,
+tree id/label, node/segment, exact windows, materiality, and
+confidence/evidence coverage. Returned caveats (gaps, low confidence, sparse
+samples, missing dimensions, unsupported cuts, guardrail warnings, stale or
+unequal-length windows) flow into top-level `caveats[]`. Result references
+and data lineage flow into `sources[]`. Use the returned evidence labels
+named in the skill exactly when present.
 
 ## Step 4: HTML fallback for local demos
 
