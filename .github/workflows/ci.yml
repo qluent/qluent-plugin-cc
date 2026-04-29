@@ -26,3 +26,5 @@ jobs:
         run: bash tests/test_renderer_contract.sh
       - name: Run command surface test
         run: bash tests/test_command_surface.sh
+      - name: Run protocol locality test
+        run: bash tests/test_protocol_locality.sh

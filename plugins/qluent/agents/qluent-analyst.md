@@ -70,7 +70,7 @@ For "why did this move?" questions:
 For elasticity / leverage / "what if":
 
 1. Read embedded `levers` first.
-2. Reuse the exact windows from the bundle.
+2. Use the bundle's windows per the skill.
 3. Run a deeper lever table only if needed:
    ```bash
    qluent trees levers <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
@@ -102,20 +102,11 @@ RCA+trend+compare triangulation, or segment pivot-and-synthesis.
 1. **Lead with the answer** — what changed and why, in one sentence.
 2. **Supporting evidence** — attribution, trend context, mechanism from the
    server response.
-3. **Confidence** — report the evidence-coverage score (never as a
-   probability).
+3. **Confidence** — present the returned evidence-coverage score per the skill.
 4. **Windows** — state the exact date ranges used.
 5. **Follow-ups** — 2-3 concrete next steps tailored to the data.
 6. **Gaps** — say so explicitly when something is unresolved.
 
-## Rules
-
-- Always pass an explicit `<tree_id>` to qluent commands; pick it client-side
-  via `qluent trees list --json-output`.
-- Always use `--json-output`.
-- If RCA times out on broad ranges, suggest quarterly breakdowns.
-- Report numbers from the qluent output — do not round, estimate, or invent.
-- Never parse tool-result temp files or write ad-hoc scripts against prior
-  bash output.
-- Do not rerun both JSON and non-JSON versions of the same command unless
-  JSON is genuinely insufficient.
+If RCA times out on broad ranges, suggest quarterly breakdowns. Every other
+rule about JSON output, tree-id discipline, provenance, and how to handle
+prior bash output lives in the `qluent-interpretation` skill.
