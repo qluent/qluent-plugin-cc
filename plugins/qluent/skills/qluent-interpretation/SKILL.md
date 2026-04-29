@@ -112,7 +112,8 @@ Recommend a lever change only when all of these hold in the returned result:
 4. The recommendation is scoped to the returned sample window and segment.
 
 Otherwise recommend the next drill: extend the window, validate across another
-segment, run `/qluent:compare`, or request an experiment/instrumentation check.
+segment, run `qluent trees compare ... --json-output`, or request an
+experiment/instrumentation check.
 
 Acceptable: *"The returned elasticity table shows a directional association in
 2026-04-13:2026-04-19 vs 2026-04-06:2026-04-12; conversion rate has the largest

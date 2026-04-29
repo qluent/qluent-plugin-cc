@@ -178,14 +178,15 @@ Rules for synthesis:
 Recommended next drills must be copy-pasteable and valid for this plugin/project.
 
 Use exact tree ids, periods, and dimensions from the bundle. Prefer qluent's returned
-recommended next steps when they are concrete. If you need to formulate a command, use
-only commands supported by this plugin:
+recommended next steps when they are concrete. Use the `/qluent:investigate` slash
+command for follow-up tree investigations, and the underlying `qluent` CLI subcommands
+for narrower drill-downs the agents and `qluent-analyst` orchestrator already invoke:
 
 ```bash
 /qluent:investigate <tree_id> --period "<period>"
-/qluent:rca <tree_id> --period "<period>" --segment-by <dimension>
-/qluent:trend <tree_id> --periods 8 --grain week
-/qluent:compare <tree_id_1> <tree_id_2> --period "<period>"
+qluent rca analyze <tree_id> --period "<period>" --segment-by <dimension> --json-output
+qluent trees trend <tree_id> --periods 8 --grain week --json-output
+qluent trees compare <tree_id_1> <tree_id_2> --period "<period>" --json-output
 ```
 
 Rank next drills by expected ability to resolve the biggest open question, not by tree
@@ -199,4 +200,5 @@ order. Include why each drill is recommended in one sentence.
 - Never manually fan out to individual `qluent trees investigate` calls as a
   fallback — that loses the bundled cross-tree contract.
 - Per-tree errors and low-confidence findings must appear in Caveats.
-- Recommendations must be concrete `/qluent:*` slash commands.
+- Recommendations must be concrete `/qluent:investigate` slash commands or
+  underlying `qluent` CLI subcommands — never paraphrased actions.
