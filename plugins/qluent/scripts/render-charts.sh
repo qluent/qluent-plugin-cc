@@ -24,12 +24,30 @@ perl -MJSON::PP -0777 -e '
   open my $json_fh, "<", $input or die "Error: Cannot read input file: $input\n";
   my $json = <$json_fh>;
   close $json_fh;
-  eval { JSON::PP->new->decode($json); 1 } or do {
+  my $decoder = JSON::PP->new;
+  my $data;
+  eval { $data = $decoder->decode($json); 1 } or do {
     my $err = $@ || "unknown parse error";
     print STDERR "Error: Input is not valid JSON: $input\n";
+    if ($json =~ /\S/) {
+      my ($first) = $json =~ /\A\s*([^\r\n]+)/;
+      $first =~ s/^\s+|\s+$//g;
+      my $preview = substr($first, 0, 96);
+      print STDERR "  Diagnosis: expected JSON at line 1, found: $preview\n";
+      print STDERR "  Re-run with clean stdout capture, for example:\n";
+      print STDERR "  qluent trees deep-dive --json-output --period \"<period>\" > /tmp/qluent-deep-dive-bundle.json\n";
+    }
     print STDERR "  $err";
     exit 1;
   };
+  if (ref($data) eq "HASH" && ($data->{outcomeShape} || "") eq "cross_tree_bundle") {
+    if (ref($data->{trees}) ne "ARRAY") {
+      print STDERR "Error: Deep-dive bundle failed validation: expected bundle.trees[]\n";
+      print STDERR "  Contract pointer: trees\n";
+      print STDERR "  Re-run with: qluent trees deep-dive --json-output --period \"<period>\" > /tmp/qluent-deep-dive-bundle.json\n";
+      exit 1;
+    }
+  }
 ' "$INPUT"
 
 perl -0777 -e '

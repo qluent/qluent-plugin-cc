@@ -177,9 +177,10 @@ fallback styling.
 
 Three temp files form the rendezvous between qluent producers and consumers
 within a session. This section is the canonical declaration; every producer,
-consumer, and test fixture references the path string verbatim. The set of
-files allowed to mention each path is pinned by `tests/test_session_paths.sh`
-— adding a new consumer requires updating that allowlist on purpose.
+consumer, test fixture, and the plugin-level `CLAUDE.md` surface references
+the path string verbatim. The set of files allowed to mention each path is
+pinned by `tests/test_session_paths.sh` — adding a new consumer requires
+updating that allowlist on purpose.
 
 ### `/tmp/qluent-viz-data.json` — investigation cache
 - **Producer:** `/qluent:investigate` (and `qluent-analyst`) tee bundled

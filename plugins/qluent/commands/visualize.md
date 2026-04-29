@@ -27,6 +27,11 @@ By default, read from `/tmp/qluent-viz-data.json`. If the user provides `--file 
 that path instead. If the file doesn't exist or is empty, tell the user to run
 `/qluent:investigate` first.
 
+If `/tmp/qluent-deep-dive-bundle.json` exists and the user asks to visualize a
+deep-dive or cross-tree result, use that file instead. Deep-dive bundles must be clean
+JSON with a bundle-level `trees[]` array; if validation fails, report the failing path
+and re-run command instead of hand-writing replacement HTML.
+
 **Freshness check:** Read the file and verify `current_window.date_from` is recent. If the
 data looks stale (wrong tree, old dates), warn the user and suggest re-running investigate.
 
@@ -35,7 +40,8 @@ data looks stale (wrong tree, old dates), warn the user and suggest re-running i
 **Report spec mode** (strict default for deterministic RCA/elasticity output): Produce or
 request an outcome-shaped `RcaReportSpec` with `outcomeShape`, ordered `sections[]`,
 `caveats[]`, and `sources[]`. Use this when the JSON contains `root_cause`, `evaluation`,
-`levers`, `agent.recommended_next_steps`, `mix_shift`, or segment findings.
+`levers`, `agent.recommended_next_steps`, `mix_shift`, segment findings, or a deep-dive
+bundle with `trees[]`.
 
 Do not hand-roll report HTML when the UI report contract can be used. Preserve the
 deterministic qluent values and provenance in the spec instead of translating findings
@@ -73,12 +79,15 @@ Read the JSON data and map the deterministic qluent fields into an ordered repor
 
 ```ts
 {
-  outcomeShape: 'driver_concentration' | 'mix_shift' | 'elasticity_tradeoff' | 'data_quality_blocker' | string,
+  outcomeShape: 'driver_concentration' | 'mix_shift' | 'elasticity_tradeoff' | 'data_quality_blocker' | 'cross_tree_bundle' | string,
   sections: [
     { type: 'root_movement', data: ... },
     { type: 'driver_decomposition', data: ... },
     { type: 'material_segment_scan', data: ... },
     { type: 'mix_shift', data: ... },
+    { type: 'cross_tree_root_movement', data: ... },
+    { type: 'cross_tree_hotspot_grid', data: ... },
+    { type: 'cross_tree_overlap', data: ... },
     { type: 'elasticity_summary', data: ... },
     { type: 'next_drills', data: ... }
   ],
@@ -99,6 +108,8 @@ Choose `outcomeShape` from the strongest returned evidence:
   tradeoff, guardrail, or scenario estimate.
 - `data_quality_blocker`: qluent returns missing, stale, sparse, or low-confidence
   evidence that blocks a reliable interpretation.
+- `cross_tree_bundle`: a deep-dive bundle compares multiple trees in one result and
+  needs a cross-tree summary before any per-tree drill-down sections.
 - Use a specific string only when the UI contract supports it or the returned qluent
   payload names an outcome shape.
 
@@ -123,6 +134,20 @@ backed by actual qluent fields:
    the returned response explicitly supports stronger causal language.
 6. `next_drills`: `agent.recommended_next_steps`, unresolved gaps, validation drills,
    comparison suggestions, or tests needed before action.
+
+For `cross_tree_bundle`, put the cross-tree sections first and reuse single-tree section
+types only as subordinate drill-downs:
+
+1. `cross_tree_root_movement`: one row per tree with root metric label, current value,
+   comparison value, absolute movement, percentage movement, blocker/status, and tree id.
+2. `cross_tree_hotspot_grid`: segment, dimension, tree, contribution/effect, materiality,
+   and direction for returned concentrated segment or hotspot findings.
+3. `cross_tree_overlap`: shared segments, repeated dimensions, correlated/tensioned tree
+   movements, or an explicit "no overlap returned" state when the bundle lacks overlap.
+4. `driver_decomposition`: per-tree driver details below the cross-tree summary.
+5. `mix_shift`: per-tree or cross-tree mix-shift findings from returned bundle fields.
+6. `next_drills`: copy-pasteable returned or derived follow-up commands, preserving tree
+   ids, period, and dimensions.
 
 ### Provenance and evidence labels
 

@@ -106,8 +106,12 @@ investigates all configured trees in parallel.
 Run the deterministic bundled command and save the JSON bundle for this session:
 
 ```bash
-qluent trees deep-dive --json-output --period "<period>" 2>&1 | tee /tmp/qluent-deep-dive-bundle.json
+qluent trees deep-dive --json-output --period "<period>" | tee /tmp/qluent-deep-dive-bundle.json
 ```
+
+Keep stderr out of the saved bundle. Progress, usage text, and CLI errors must remain
+on stderr so `/tmp/qluent-deep-dive-bundle.json` round-trips through `jq .` and the
+renderer can validate it as clean JSON.
 
 If qluent exits non-zero:
 

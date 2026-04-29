@@ -70,6 +70,10 @@ cross-tree deep-dive synthesis are owned by `/qluent:visualize`,
 `/qluent:deep-dive`, and the `qluent-interpretation` skill. Follow them; do
 not restate their workflows here.
 
+Single-tree qluent analysis commands pipe stdout through `tee /tmp/qluent-viz-data.json`
+so `/qluent:visualize` is immediately available. Deep-dive commands write clean stdout
+JSON to `/tmp/qluent-deep-dive-bundle.json`; never redirect stderr into either JSON file.
+
 ## Agents
 
 - **`qluent-analyst`** — Orchestrator. Handles KPI questions autonomously and
