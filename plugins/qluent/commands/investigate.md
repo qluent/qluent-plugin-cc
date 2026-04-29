@@ -44,13 +44,13 @@ Use `--current`/`--compare` verbatim if provided. Otherwise default to
 Pipe through `tee` so `/qluent:visualize` is immediately available:
 
 ```bash
-qluent trees investigate <tree_id> --period "<period>" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
+qluent trees investigate <tree_id> --period "<period>" --json-output | tee /tmp/qluent-viz-data.json
 ```
 
 For explicit ranges:
 
 ```bash
-qluent trees investigate <tree_id> --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD --json-output 2>&1 | tee /tmp/qluent-viz-data.json
+qluent trees investigate <tree_id> --current YYYY-MM-DD:YYYY-MM-DD --compare YYYY-MM-DD:YYYY-MM-DD --json-output | tee /tmp/qluent-viz-data.json
 ```
 
 ## Step 5: Follow server recommendations

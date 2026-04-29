@@ -19,6 +19,19 @@ if [ ! -f "$TEMPLATE" ]; then
   exit 1
 fi
 
+perl -MJSON::PP -0777 -e '
+  my ($input) = @ARGV;
+  open my $json_fh, "<", $input or die "Error: Cannot read input file: $input\n";
+  my $json = <$json_fh>;
+  close $json_fh;
+  eval { JSON::PP->new->decode($json); 1 } or do {
+    my $err = $@ || "unknown parse error";
+    print STDERR "Error: Input is not valid JSON: $input\n";
+    print STDERR "  $err";
+    exit 1;
+  };
+' "$INPUT"
+
 perl -0777 -e '
   use strict;
   use warnings;

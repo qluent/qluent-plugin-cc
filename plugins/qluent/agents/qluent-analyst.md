@@ -40,7 +40,7 @@ it directly. Otherwise list trees and pick the best fit; ask the user with
 the top 2–3 candidates if no clear winner.
 
 ```bash
-qluent trees investigate <tree_id> --period "<period>" --json-output 2>&1 | tee /tmp/qluent-viz-data.json
+qluent trees investigate <tree_id> --period "<period>" --json-output | tee /tmp/qluent-viz-data.json
 ```
 
 Always pipe through `tee` to auto-save visualization data.

@@ -360,6 +360,35 @@ function pickNormalizedDelta(data) {
   ];
   return candidates.find(v => v != null);
 }
+function getEvaluation(data) {
+  return data?.evaluation || {};
+}
+function getRootNode(data) {
+  const ev = getEvaluation(data);
+  return ev.root || ev.root_metric || (ev.nodes || []).find(n => n.parent_id === null) || null;
+}
+function getRootContributors(data) {
+  const root = getRootNode(data);
+  if (root?.contributions?.length) return root.contributions;
+  const evContribs = data?.evaluation?.top_contributors || [];
+  if (evContribs.length) return evContribs;
+  return (data?.root_cause?.conclusion?.takeaways || [])
+    .filter(t => t.kind === 'driver' || t.kind === 'mechanism')
+    .map(t => ({
+      node_id: t.node_id,
+      label: t.title || t.node_id,
+      delta_value: t.delta_value ?? t.effect_value,
+      delta_share: t.share_of_change,
+      summary: t.summary
+    }))
+    .filter(t => t.delta_value != null || t.delta_share != null);
+}
+function getConfidenceConclusion(data) {
+  return data?.root_cause?.conclusion || data?.root_cause || {};
+}
+function getTakeaways(data) {
+  return data?.root_cause?.conclusion?.takeaways || [];
+}
 </script>
 
 <div class="main">
@@ -385,16 +414,17 @@ function pickNormalizedDelta(data) {
   // Update topbar
   document.querySelector('.topbar .page-title').textContent = label + ' Analysis';
 
-  const ev = qdata.evaluation;
-  if (ev && ev.current_value != null) {
+  const ev = getEvaluation(qdata);
+  const rootNode = getRootNode(qdata);
+  if (rootNode && rootNode.current_value != null) {
     const row = document.getElementById('kpi-row');
     row.insertAdjacentHTML('beforeend', `
       <div class="kpi-card">
-        <div class="kpi-value">${fmtCurrency(ev.current_value)}</div>
-        <div class="kpi-delta ${deltaClass(ev.delta_ratio)}">${fmtPct(ev.delta_ratio)} (${fmtCurrency(ev.delta_value)})</div>
-        <div class="kpi-label">${esc(ev.tree_label || 'Total')}</div>
+        <div class="kpi-value">${fmtCurrency(rootNode.current_value)}</div>
+        <div class="kpi-delta ${deltaClass(rootNode.delta_ratio)}">${fmtPct(rootNode.delta_ratio)} (${fmtCurrency(rootNode.delta_value)})</div>
+        <div class="kpi-label">${esc(rootNode.label || ev.tree_label || 'Total')}</div>
       </div>`);
-    (ev.top_contributors || []).forEach(c => {
+    getRootContributors(qdata).forEach(c => {
       row.insertAdjacentHTML('beforeend', `
         <div class="kpi-card">
           <div class="kpi-value" style="font-size:1.15rem">${fmtCurrency(c.delta_value)}</div>
@@ -419,10 +449,9 @@ function pickNormalizedDelta(data) {
 
   // Pre-compute shared eval tree data for chart sections
   if (ev && ev.nodes) {
-    const root = ev.nodes.find(n => n.parent_id === null);
-    if (root) {
-      window._evalRoot = root;
-      window._evalChildren = ev.nodes.filter(n => n.parent_id === root.id)
+    if (rootNode) {
+      window._evalRoot = rootNode;
+      window._evalChildren = ev.nodes.filter(n => n.parent_id === rootNode.id)
         .sort((a, b) => Math.abs(b.delta_value) - Math.abs(a.delta_value));
     }
   }
@@ -437,8 +466,9 @@ function pickNormalizedDelta(data) {
 </div>
 <script>
 (function() {
-  const agent = qdata.agent;
-  if (!agent) { document.getElementById('agent-section').classList.add('hidden'); return; }
+  const agent = qdata.agent || {};
+  const takeaways = getTakeaways(qdata);
+  if (!agent.top_findings?.length && !takeaways.length) { document.getElementById('agent-section').classList.add('hidden'); return; }
 
   const status = agent.status || 'unknown';
   const statusClass = 'status-' + status;
@@ -453,7 +483,7 @@ function pickNormalizedDelta(data) {
   }
 
   const findingsEl = document.getElementById('agent-findings');
-  const findings = agent.top_findings || [];
+  const findings = agent.top_findings || takeaways.map(t => t.summary || t.title).filter(Boolean);
   if (findings.length) {
     findings.forEach(f => {
       const div = document.createElement('div');
@@ -740,12 +770,12 @@ function pickNormalizedDelta(data) {
 </div>
 <script>
 (function() {
-  const contributors = qdata.root_cause?.top_contributors || [];
+  const contributors = getRootContributors(qdata);
   if (!contributors.length) { document.getElementById('rca-section').classList.add('hidden'); return; }
 
   const sorted = [...contributors].sort((a, b) => Math.abs(b.shapley_share || b.percentage_share || 0) - Math.abs(a.shapley_share || a.percentage_share || 0));
-  const labels = sorted.map(c => c.node || c.node_id || 'Unknown');
-  const shares = sorted.map(c => ((c.shapley_share || c.percentage_share || 0) * 100));
+  const labels = sorted.map(c => c.node || c.label || c.node_id || 'Unknown');
+  const shares = sorted.map(c => ((c.shapley_share ?? c.percentage_share ?? c.delta_share ?? 0) * 100));
   const colors = shares.map(v => v >= 0 ? Q.greenFill : Q.redFill);
   const borders = shares.map(v => v >= 0 ? Q.green : Q.red);
 
@@ -806,7 +836,8 @@ function pickNormalizedDelta(data) {
 <script>
 (function() {
   const rc = qdata.root_cause || {};
-  const score = rc.conclusion?.confidence_score;
+  const conclusion = getConfidenceConclusion(qdata);
+  const score = conclusion.confidence_score;
   if (score == null) { document.getElementById('confidence-section').classList.add('hidden'); return; }
 
   const pct = (score * 100).toFixed(0);
@@ -814,8 +845,8 @@ function pickNormalizedDelta(data) {
   el.textContent = pct + '%';
   el.className = 'score-display ' + (score >= 0.8 ? 'score-high' : score >= 0.6 ? 'score-medium' : 'score-low');
 
-  const present = rc.evidence_types_present || [];
-  const missing = rc.evidence_types_missing || [];
+  const present = rc.conclusion?.evidence_types_present || rc.evidence_types_present || [];
+  const missing = rc.conclusion?.evidence_types_missing || rc.evidence_types_missing || [];
   const container = document.getElementById('evidence-tags');
   present.forEach(t => {
     const span = document.createElement('span');
