@@ -172,3 +172,41 @@ See `/qluent:visualize` for the section mapping (`root_movement`,
 `driver_decomposition`, `material_segment_scan`, `mix_shift`,
 `elasticity_summary`, `next_drills`) and the `dashboard-design` skill for HTML
 fallback styling.
+
+## Session paths
+
+Three temp files form the rendezvous between qluent producers and consumers
+within a session. This section is the canonical declaration; every producer,
+consumer, and test fixture references the path string verbatim. The set of
+files allowed to mention each path is pinned by `tests/test_session_paths.sh`
+— adding a new consumer requires updating that allowlist on purpose.
+
+### `/tmp/qluent-viz-data.json` — investigation cache
+- **Producer:** `/qluent:investigate` (and `qluent-analyst`) tee bundled
+  investigation JSON to this path.
+- **Consumers:** `/qluent:visualize` reads it to build `RcaReportSpec`;
+  `scripts/post-bash.sh` inspects it to surface unsupported-cut nudges and
+  freshness reminders; `scripts/render-charts.sh` reads it for the HTML
+  fallback.
+- **Schema:** the full investigate response, including `tree_id`,
+  `tree_label`, `current_window`, `comparison_window`, `agent`, `evaluation`,
+  `root_cause`, `levers`, `validation`, `warnings`.
+- **Freshness:** consumers should verify `current_window.date_from` is recent
+  and the `tree_id` matches the question before rendering. Stale or
+  mismatched data triggers a re-run suggestion.
+
+### `/tmp/qluent-deep-dive-bundle.json` — cross-tree deep-dive bundle
+- **Producer:** `/qluent:deep-dive` tees the bundled cross-tree JSON to this
+  path.
+- **Consumer:** `scripts/post-bash.sh` checks for it and steers synthesis
+  toward one cross-tree narrative.
+- **Schema:** bundle-level period/windows plus per-tree results per
+  `qluent trees deep-dive --json-output`.
+
+### `/tmp/qluent-tree-capabilities.json` — session tree catalog
+- **Producer:** `scripts/session-start.sh` writes the normalized catalog
+  (tree id, label, root metric, dimensions, children) at session start.
+- **Consumers:** `scripts/post-bash.sh` and `scripts/select-fallback-tree.sh`
+  read it for the unsupported-cut algorithm; `segment-explorer` and
+  `rca-validator` agents read it to pick companion trees pre-emptively.
+- **Schema:** `{"trees": [{"id", "label", "root", "desc", "dims", "children"}, ...]}`.
