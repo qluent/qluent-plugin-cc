@@ -28,3 +28,5 @@ jobs:
         run: bash tests/test_command_surface.sh
       - name: Run protocol locality test
         run: bash tests/test_protocol_locality.sh
+      - name: Run session paths test
+        run: bash tests/test_session_paths.sh
