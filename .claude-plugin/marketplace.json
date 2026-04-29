@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Deterministic KPI analysis with metric trees, trend analysis, and root cause analysis.",
-    "version": "0.3.0"
+    "version": "0.3.1"
   },
   "plugins": [
     {
       "name": "qluent",
       "description": "Analyze business metrics, investigate KPI movements, and run deterministic root cause analysis from Claude Code.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "author": {
         "name": "Qluent"
       },
