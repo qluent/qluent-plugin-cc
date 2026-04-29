@@ -29,16 +29,13 @@ assert_not_contains() {
 }
 
 # Files that must defer to the skill instead of restating it.
-CALLERS=(
-  "$ROOT/plugins/qluent/commands/investigate.md"
-  "$ROOT/plugins/qluent/commands/deep-dive.md"
-  "$ROOT/plugins/qluent/commands/visualize.md"
-  "$ROOT/plugins/qluent/agents/qluent-analyst.md"
-  "$ROOT/plugins/qluent/agents/rca-validator.md"
-  "$ROOT/plugins/qluent/agents/trend-interpreter.md"
-  "$ROOT/plugins/qluent/agents/segment-explorer.md"
-  "$ROOT/plugins/qluent/CLAUDE.md"
-)
+CALLERS=("$ROOT/plugins/qluent/CLAUDE.md")
+for caller in "$ROOT"/plugins/qluent/commands/*.md "$ROOT"/plugins/qluent/agents/*.md; do
+  case "$(basename "$caller")" in
+    setup.md) continue ;;
+  esac
+  CALLERS+=("$caller")
+done
 
 # Canonical phrases that must live ONLY in the skill. Each phrase is the
 # distinctive wording of a protocol rule the skill owns.
@@ -85,8 +82,7 @@ for caller in "${CALLERS[@]}"; do
 done
 
 # 4. Agents declare the load contract via frontmatter (#32 seam).
-for agent in qluent-analyst rca-validator trend-interpreter segment-explorer; do
-  agent_file="$ROOT/plugins/qluent/agents/${agent}.md"
+for agent_file in "$ROOT"/plugins/qluent/agents/*.md; do
   # Crude but sufficient: the frontmatter line must appear.
   if ! grep -E '^[[:space:]]*-[[:space:]]+qluent-interpretation[[:space:]]*$' "$agent_file" >/dev/null; then
     fail "$agent_file frontmatter must list qluent-interpretation under skills:"
@@ -95,8 +91,10 @@ done
 
 # 5. Slash commands declare the load contract via Step 0 Read (#32 seam).
 #    setup.md is intentionally exempt — it predates any analysis flow.
-for cmd in investigate deep-dive visualize; do
-  cmd_file="$ROOT/plugins/qluent/commands/${cmd}.md"
+for cmd_file in "$ROOT"/plugins/qluent/commands/*.md; do
+  case "$(basename "$cmd_file")" in
+    setup.md) continue ;;
+  esac
   assert_contains "$cmd_file" 'skills/qluent-interpretation/SKILL.md'
 done
 
