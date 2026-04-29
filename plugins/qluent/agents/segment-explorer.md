@@ -37,19 +37,16 @@ For supported dimensions, run RCA on the original tree:
 qluent rca analyze <tree_id> --current <start>:<end> --compare <start>:<end> --json-output
 ```
 
-For unsupported dimensions, pick the closest compatible companion tree. Prefer:
-
-1. Full coverage of every requested dimension.
-2. Most overlapping dimensions.
-3. Root-metric family tiebreak.
-
-Run segmentation on the companion tree with the exact same windows:
+For unsupported dimensions, apply the unsupported-cut selection algorithm
+documented in the `qluent-interpretation` skill against the cached catalog,
+then run segmentation on the chosen companion tree with the exact same
+windows:
 
 ```bash
 qluent rca analyze <companion_tree_id> --current <start>:<end> --compare <start>:<end> --json-output
 ```
 
-When the catalog has no compatible tree, say so and stop. Do not invent
+When the algorithm returns no candidate, say so and stop. Do not invent
 dimensions or fabricate rankings.
 
 ## Synthesis

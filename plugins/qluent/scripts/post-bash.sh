@@ -5,6 +5,8 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 jq_bin=$(command -v jq || true)
 [ -n "$jq_bin" ] || exit 0
 
@@ -81,9 +83,8 @@ build_fallback_guidance() {
   [ -f "$viz_path" ] || return 0
   "$jq_bin" -e 'type == "object"' "$viz_path" >/dev/null 2>&1 || return 0
 
-  local tree_id tree_label status current_from current_to comparison_from comparison_to
+  local tree_id status current_from current_to comparison_from comparison_to
   tree_id=$("$jq_bin" -r '.tree_id // empty' "$viz_path")
-  tree_label=$("$jq_bin" -r '.tree_label // empty' "$viz_path")
   status=$("$jq_bin" -r '.agent.status // empty' "$viz_path")
   current_from=$("$jq_bin" -r '.current_window.date_from // empty' "$viz_path")
   current_to=$("$jq_bin" -r '.current_window.date_to // empty' "$viz_path")
@@ -139,66 +140,33 @@ build_fallback_guidance() {
     window_args="--current ${current_from}:${current_to} --compare ${comparison_from}:${comparison_to}"
   fi
 
-  local required_json='[]'
-  if [ ${#unsupported_dims[@]} -gt 0 ]; then
-    required_json=$(printf '%s\n' "${unsupported_dims[@]}" | "$jq_bin" -R . | "$jq_bin" -s .)
-  fi
+  local required_csv
+  required_csv=$(join_by ',' "${unsupported_dims[@]}")
 
-  local -a compatible_candidates=()
-  local -a partial_candidates=()
-  local line candidate_id candidate_dims
-
-  if [ -f "$catalog_path" ]; then
-    while IFS=$'\t' read -r candidate_id candidate_dims; do
-      [ -n "$candidate_id" ] && compatible_candidates+=("${candidate_id} (segments: ${candidate_dims})")
-    done < <(
-      "$jq_bin" -r --arg current "$tree_id" --argjson required "$required_json" '
-        .trees[]?
-        | select(.id != $current)
-        | (.dims // .dimensions // []) as $dims
-        | select(($required | all(. as $req | $dims | index($req))))
-        | [.id, ($dims | join(", "))] | @tsv
-      ' "$catalog_path"
-    )
-
-    if [ ${#compatible_candidates[@]} -eq 0 ]; then
-      while IFS=$'\t' read -r candidate_id candidate_dims; do
-        [ -n "$candidate_id" ] && partial_candidates+=("${candidate_id} (segments: ${candidate_dims})")
-      done < <(
-        "$jq_bin" -r --arg current "$tree_id" --argjson required "$required_json" '
-          [
-            .trees[]?
-            | select(.id != $current)
-            | (.dims // .dimensions // []) as $dims
-            | {
-                id: .id,
-                dims: ($dims | join(", ")),
-                overlap: ($required | map(select($dims | index(.))) | length)
-              }
-            | select(.overlap > 0)
-          ]
-          | sort_by(-.overlap, .id)[]
-          | [.id, .dims] | @tsv
-        ' "$catalog_path"
-      )
-    fi
-  fi
+  local selector="${SCRIPT_DIR}/select-fallback-tree.sh"
+  local selection selected_id selected_reason selected_dims=""
+  selection=$("$selector" "$catalog_path" "$tree_id" "$required_csv" 2>/dev/null || printf '\tnone\t')
+  selected_id=$(printf '%s' "$selection" | cut -f1)
+  selected_reason=$(printf '%s' "$selection" | cut -f2)
+  selected_dims=$(printf '%s' "$selection" | cut -f3)
 
   echo "  → Requested segment cuts are unavailable on ${tree_id:-this tree}: $(join_by ', ' "${unsupported_dims[@]}")."
   echo "  → Keep the same windows and pivot to the closest tree that supports the missing cuts. Do not stop at the limitation."
 
-  if [ ${#compatible_candidates[@]} -gt 0 ]; then
-    echo "  → Compatible fallback trees from session context: $(join_by ', ' "${compatible_candidates[@]:0:3}")"
-    if [ -n "$window_args" ]; then
-      line="${compatible_candidates[0]}"
-      candidate_id="${line%% *}"
-      echo "  → Example next step: qluent trees investigate ${candidate_id} ${window_args} --json-output"
-    fi
-  elif [ ${#partial_candidates[@]} -gt 0 ]; then
-    echo "  → No tree covers every requested cut, but these trees cover part of it: $(join_by ', ' "${partial_candidates[@]:0:3}")"
-  else
-    echo "  → No compatible fallback tree is cached yet. Run \`qluent trees list --json-output\`, choose a tree exposing those dimensions, and continue with the same windows."
-  fi
+  case "$selected_reason" in
+    full_coverage)
+      echo "  → Closest companion tree: ${selected_id} (segments: ${selected_dims})."
+      if [ -n "$window_args" ]; then
+        echo "  → Example next step: qluent trees investigate ${selected_id} ${window_args} --json-output"
+      fi
+      ;;
+    partial_overlap)
+      echo "  → No tree covers every requested cut. Best partial match: ${selected_id} (segments: ${selected_dims})."
+      ;;
+    *)
+      echo "  → No compatible fallback tree is cached yet. Run \`qluent trees list --json-output\`, choose a tree exposing those dimensions, and continue with the same windows."
+      ;;
+  esac
 
   echo "  → Synthesize both views: keep the original tree for KPI-specific or category/margin reasoning, and use the fallback tree for the requested segmentation."
 
