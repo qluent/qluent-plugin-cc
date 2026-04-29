@@ -130,17 +130,35 @@ block is insufficient.
 
 ## Unsupported segment cuts
 
-If the user asks for a dimension the current tree does not expose:
+If the user asks for a dimension the current tree does not expose, pivot to a
+compatible companion tree with the same windows and synthesize both views.
 
-1. Reuse the exact current/comparison windows from the prior result.
-2. Check the session tree catalog (or run `qluent trees list --json-output`)
-   for a compatible tree that declares the missing dimension.
-3. Re-run the investigation or RCA on the fallback tree with the same windows.
-4. Synthesize both views: original tree for KPI-specific reasoning, fallback
-   tree for the requested segmentation. State which tree provided which view.
+### Selection algorithm
 
-Never stop at the limitation. The PostToolUse hook surfaces compatible
-fallback trees automatically — follow its suggestions.
+Given the cached catalog (`/tmp/qluent-tree-capabilities.json`, or a fresh
+`qluent trees list --json-output`), the current tree id, and the requested
+dimensions, rank candidates as follows:
+
+1. **Full coverage wins.** Among trees that declare *every* requested
+   dimension, prefer the best.
+2. **Otherwise, most overlapping dimensions wins.** Among trees that expose at
+   least one requested dimension, prefer the highest count.
+3. **Tiebreak — Root-metric family tiebreak.** Within either group, prefer
+   trees that share the current tree's root metric.
+4. **Final tiebreak: alphabetical tree id.**
+5. **No candidate? Stop and say so.** Do not invent or fabricate.
+
+This is the single source of truth for the algorithm. The PostToolUse hook
+runs `scripts/select-fallback-tree.sh` to surface the chosen tree to the
+user; agents that decide pre-emptively (e.g. `segment-explorer`) apply the
+same algorithm against the cached catalog.
+
+### Synthesis
+
+Combine both views: the original tree for KPI-specific reasoning, the
+companion tree for the requested segmentation. State which tree provided
+which view. Reuse the exact current/comparison windows from the prior
+result; never stop at the limitation.
 
 ## Visualization
 
