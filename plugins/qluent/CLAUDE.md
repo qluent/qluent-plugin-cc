@@ -63,23 +63,12 @@ interpretation, elasticity guardrails, and the segment-cut fallback rule live
 in the `qluent-interpretation` skill. Read it before driving the CLI; do not
 restate or paraphrase its rules elsewhere.
 
-## Visualization
+## Visualization and deep-dives
 
-For charts and RCA reports, use `/qluent:visualize`. It produces an
-outcome-shaped `RcaReportSpec` with ordered `sections[]`, `caveats[]`, and
-`sources[]`. Do not hand-roll HTML/CSS/Chart.js when the UI contract can be
-used. Local HTML is a fallback only on `--simple`/`--html` or when the UI
-contract is unavailable; use `render-charts.sh` for that path.
-
-All qluent analysis commands pipe through the canonical investigation cache
-(see Session paths in the `qluent-interpretation` skill) so `/qluent:visualize`
-is immediately available.
-
-## Cross-tree deep dives
-
-`/qluent:deep-dive [period]` runs `qluent trees deep-dive --json-output --period`
-(qluent-cli#40+). It is opt-in and confirms cost unless `--yes` is passed.
-Synthesize the bundle into one narrative — never split into per-tree reports.
+Visualization precedence (`RcaReportSpec` first, HTML fallback) and
+cross-tree deep-dive synthesis are owned by `/qluent:visualize`,
+`/qluent:deep-dive`, and the `qluent-interpretation` skill. Follow them; do
+not restate their workflows here.
 
 ## Agents
 

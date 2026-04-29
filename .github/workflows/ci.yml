@@ -28,6 +28,8 @@ jobs:
         run: bash tests/test_command_surface.sh
       - name: Run protocol locality test
         run: bash tests/test_protocol_locality.sh
+      - name: Run doc seams test
+        run: bash tests/test_doc_seams.sh
       - name: Run session paths test
         run: bash tests/test_session_paths.sh
       - name: Run fallback algorithm test
