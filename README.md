@@ -87,3 +87,34 @@ instead of falling back to separate tree investigations.
 ## License
 
 MIT
+
+## Contributing
+
+### Cutting a release
+
+The plugin version is tracked in two manifest files:
+
+- `.claude-plugin/marketplace.json` (both `metadata.version` and the
+  `plugins[].version` for the `qluent` entry)
+- `plugins/qluent/.claude-plugin/plugin.json`
+
+The marketplace cache key includes the version string, so the version field
+**must** be bumped for clients to pick up new commits — leaving it unchanged
+makes `/plugin marketplace update` short-circuit with "already at latest".
+
+To bump every manifest at once:
+
+```bash
+node scripts/bump-version.mjs 0.3.2
+```
+
+To verify all manifests share the same version (CI runs this on every PR):
+
+```bash
+node scripts/bump-version.mjs --check
+# or pin an expected value:
+node scripts/bump-version.mjs --check 0.3.2
+```
+
+Open a release PR with the bump commit, merge to `main`, and clients will pull
+the new version on their next `/plugin marketplace update qluent-metric-trees`.
