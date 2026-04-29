@@ -425,10 +425,13 @@ function getTakeaways(data) {
         <div class="kpi-label">${esc(rootNode.label || ev.tree_label || 'Total')}</div>
       </div>`);
     getRootContributors(qdata).forEach(c => {
+      const shareLine = c.delta_share != null
+        ? `<div class="kpi-delta ${deltaClass(c.delta_share)}">${(c.delta_share * 100).toFixed(0)}% of change</div>`
+        : '';
       row.insertAdjacentHTML('beforeend', `
         <div class="kpi-card">
           <div class="kpi-value" style="font-size:1.15rem">${fmtCurrency(c.delta_value)}</div>
-          <div class="kpi-delta ${deltaClass(c.delta_share)}">${(c.delta_share * 100).toFixed(0)}% of change</div>
+          ${shareLine}
           <div class="kpi-label">${esc(c.label || c.node_id)}</div>
         </div>`);
     });

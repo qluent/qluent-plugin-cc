@@ -40,6 +40,9 @@ assert_contains "$ROOT/plugins/qluent/templates/render-charts.html" \
   'const present = rc.conclusion?.evidence_types_present || rc.evidence_types_present || [];'
 assert_not_contains "$ROOT/plugins/qluent/templates/render-charts.html" \
   'qdata.root_cause?.top_contributors || []'
+# Guard against NaN% when a contributor has no delta_share (e.g. takeaway fallback)
+assert_contains "$ROOT/plugins/qluent/templates/render-charts.html" \
+  'c.delta_share != null'
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
@@ -101,14 +104,46 @@ assert_contains "$html" '"label": "Net Revenue"'
 assert_contains "$html" 'getRootNode(qdata)'
 assert_contains "$html" 'getRootContributors(qdata)'
 
+takeaway_only_json="$tmpdir/takeaway_only.json"
+takeaway_html="$tmpdir/takeaway.html"
+
+cat > "$takeaway_only_json" <<'JSON'
+{
+  "tree_id": "revenue",
+  "tree_label": "Revenue & Commercial",
+  "evaluation": {
+    "nodes": [
+      {
+        "id": "net_revenue",
+        "label": "Net Revenue",
+        "parent_id": null,
+        "current_value": 100,
+        "delta_value": 10,
+        "delta_ratio": 0.1
+      }
+    ]
+  },
+  "root_cause": {
+    "conclusion": {
+      "takeaways": [
+        {"kind": "driver", "node_id": "gross_revenue", "title": "Gross Revenue", "summary": "drove the change", "delta_value": 8}
+      ]
+    }
+  }
+}
+JSON
+
+"$ROOT/plugins/qluent/scripts/render-charts.sh" "$takeaway_only_json" "$takeaway_html" >/dev/null
+assert_contains "$takeaway_html" '"title": "Gross Revenue"'
+
 cat > "$contaminated_json" <<'TEXT'
 [qluent] awaiting response... (30s)
 {"tree_id":"revenue"}
 TEXT
 
-if "$ROOT/plugins/qluent/scripts/render-charts.sh" "$contaminated_json" "$tmpdir/bad.html" >/tmp/render.out 2>/tmp/render.err; then
+if "$ROOT/plugins/qluent/scripts/render-charts.sh" "$contaminated_json" "$tmpdir/bad.html" >"$tmpdir/render.out" 2>"$tmpdir/render.err"; then
   fail "render-charts.sh should reject contaminated non-JSON input"
 fi
-assert_contains /tmp/render.err "Input is not valid JSON"
+assert_contains "$tmpdir/render.err" "Input is not valid JSON"
 
 echo "renderer contract tests passed"
