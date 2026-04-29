@@ -83,8 +83,7 @@ for t in trees:
         line += '  (' + ' | '.join(meta) + ')'
     print(line)
 print()
-print('Fallback rule: if a requested cut is unavailable on the chosen tree, keep the same windows and pivot to the closest tree that lists that dimension.')
-print('Combine the original tree for KPI-specific explanation with the fallback tree for segmentation instead of stopping at the limitation.')
+print('Unsupported cuts: the post-bash hook surfaces the closest companion tree per the algorithm in the qluent-interpretation skill. Follow its suggestion and synthesize both views.')
 print()
 print('Business-language routing hints: revenue/sales/GMV/AOV -> revenue; growth/users/acquisition/reactivation -> growth; delivery/late/failed/courier/ops quality -> operations; conversion/checkout/cart/traffic/payment -> conversion_funnel.')
 print('On first run, orient the user from this tree metadata and offer one concrete first command. Use qluent whoami/status/suggestions only when available; do not probe unsupported project/status commands.')

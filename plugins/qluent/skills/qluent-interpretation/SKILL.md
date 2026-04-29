@@ -130,17 +130,35 @@ block is insufficient.
 
 ## Unsupported segment cuts
 
-If the user asks for a dimension the current tree does not expose:
+If the user asks for a dimension the current tree does not expose, pivot to a
+compatible companion tree with the same windows and synthesize both views.
 
-1. Reuse the exact current/comparison windows from the prior result.
-2. Check the session tree catalog (or run `qluent trees list --json-output`)
-   for a compatible tree that declares the missing dimension.
-3. Re-run the investigation or RCA on the fallback tree with the same windows.
-4. Synthesize both views: original tree for KPI-specific reasoning, fallback
-   tree for the requested segmentation. State which tree provided which view.
+### Selection algorithm
 
-Never stop at the limitation. The PostToolUse hook surfaces compatible
-fallback trees automatically — follow its suggestions.
+Given the cached catalog (`/tmp/qluent-tree-capabilities.json`, or a fresh
+`qluent trees list --json-output`), the current tree id, and the requested
+dimensions, rank candidates as follows:
+
+1. **Full coverage wins.** Among trees that declare *every* requested
+   dimension, prefer the best.
+2. **Otherwise, most overlapping dimensions wins.** Among trees that expose at
+   least one requested dimension, prefer the highest count.
+3. **Tiebreak — Root-metric family tiebreak.** Within either group, prefer
+   trees that share the current tree's root metric.
+4. **Final tiebreak: alphabetical tree id.**
+5. **No candidate? Stop and say so.** Do not invent or fabricate.
+
+This is the single source of truth for the algorithm. The PostToolUse hook
+runs `scripts/select-fallback-tree.sh` to surface the chosen tree to the
+user; agents that decide pre-emptively (e.g. `segment-explorer`) apply the
+same algorithm against the cached catalog.
+
+### Synthesis
+
+Combine both views: the original tree for KPI-specific reasoning, the
+companion tree for the requested segmentation. State which tree provided
+which view. Reuse the exact current/comparison windows from the prior
+result; never stop at the limitation.
 
 ## Visualization
 
@@ -154,3 +172,41 @@ See `/qluent:visualize` for the section mapping (`root_movement`,
 `driver_decomposition`, `material_segment_scan`, `mix_shift`,
 `elasticity_summary`, `next_drills`) and the `dashboard-design` skill for HTML
 fallback styling.
+
+## Session paths
+
+Three temp files form the rendezvous between qluent producers and consumers
+within a session. This section is the canonical declaration; every producer,
+consumer, and test fixture references the path string verbatim. The set of
+files allowed to mention each path is pinned by `tests/test_session_paths.sh`
+— adding a new consumer requires updating that allowlist on purpose.
+
+### `/tmp/qluent-viz-data.json` — investigation cache
+- **Producer:** `/qluent:investigate` (and `qluent-analyst`) tee bundled
+  investigation JSON to this path.
+- **Consumers:** `/qluent:visualize` reads it to build `RcaReportSpec`;
+  `scripts/post-bash.sh` inspects it to surface unsupported-cut nudges and
+  freshness reminders; `scripts/render-charts.sh` reads it for the HTML
+  fallback.
+- **Schema:** the full investigate response, including `tree_id`,
+  `tree_label`, `current_window`, `comparison_window`, `agent`, `evaluation`,
+  `root_cause`, `levers`, `validation`, `warnings`.
+- **Freshness:** consumers should verify `current_window.date_from` is recent
+  and the `tree_id` matches the question before rendering. Stale or
+  mismatched data triggers a re-run suggestion.
+
+### `/tmp/qluent-deep-dive-bundle.json` — cross-tree deep-dive bundle
+- **Producer:** `/qluent:deep-dive` tees the bundled cross-tree JSON to this
+  path.
+- **Consumer:** `scripts/post-bash.sh` checks for it and steers synthesis
+  toward one cross-tree narrative.
+- **Schema:** bundle-level period/windows plus per-tree results per
+  `qluent trees deep-dive --json-output`.
+
+### `/tmp/qluent-tree-capabilities.json` — session tree catalog
+- **Producer:** `scripts/session-start.sh` writes the normalized catalog
+  (tree id, label, root metric, dimensions, children) at session start.
+- **Consumers:** `scripts/post-bash.sh` and `scripts/select-fallback-tree.sh`
+  read it for the unsupported-cut algorithm; `segment-explorer` and
+  `rca-validator` agents read it to pick companion trees pre-emptively.
+- **Schema:** `{"trees": [{"id", "label", "root", "desc", "dims", "children"}, ...]}`.

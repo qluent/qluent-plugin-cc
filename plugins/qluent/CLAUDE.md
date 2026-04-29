@@ -9,8 +9,9 @@ When the user mentions metrics, KPIs, business performance, or seems unsure
 what to ask, offer to help.
 
 The session-start hook (`scripts/session-start.sh`) is the canonical source for
-per-session orientation. It introspects available trees, writes the catalog file
-at `/tmp/qluent-tree-capabilities.json`, and injects:
+per-session orientation. It introspects available trees, writes the session
+tree catalog (see Session paths in the `qluent-interpretation` skill), and
+injects:
 
 - the list of available trees with root metrics, sub-metric breakdowns, and segment dimensions
 - business-language routing hints (for example, revenue/GMV -> `revenue`, conversion/cart -> `conversion_funnel`)
