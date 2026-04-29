@@ -37,22 +37,20 @@ Or use slash commands directly:
 |---|---|
 | `/qluent:deep-dive` | Cross-tree executive narrative across all configured metric trees |
 | `/qluent:investigate` | Full analysis: validation, trend, evaluation, and RCA |
-| `/qluent:trend` | Multi-period trend analysis |
-| `/qluent:rca` | Root cause analysis with Shapley attribution |
-| `/qluent:compare` | Side-by-side metric tree comparison |
+| `/qluent:visualize` | Shape the latest analysis into an `RcaReportSpec` (or local HTML fallback) |
 | `/qluent:setup` | Check installation and configuration |
 
 Start with `/qluent:investigate` for a specific metric tree. Use
 `/qluent:deep-dive` when you need one executive read across the whole business.
-The other commands are for follow-up drill-downs.
+`/qluent:investigate` already bundles trend, RCA, and segment data; the qluent
+agents run any deeper follow-ups directly against the qluent CLI when the
+bundled response calls for them.
 
 ```bash
 /qluent:deep-dive last week
 /qluent:deep-dive --period "this month" --yes
 /qluent:deep-dive 2026-04-01:2026-04-28
 /qluent:investigate why did revenue drop last week?
-/qluent:trend revenue --periods 8 --grain week
-/qluent:compare revenue orders --period "last month"
 ```
 
 ## Cross-tree deep dives

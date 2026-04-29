@@ -24,3 +24,5 @@ jobs:
         run: node scripts/bump-version.mjs --check
       - name: Run renderer contract test
         run: bash tests/test_renderer_contract.sh
+      - name: Run command surface test
+        run: bash tests/test_command_surface.sh

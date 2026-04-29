@@ -42,17 +42,16 @@ tree for the latest period and present real findings.
 
 - `/qluent:investigate` — Primary entry point. Bundles validation, trend, evaluation, and RCA.
 - `/qluent:deep-dive` — Opt-in cross-tree executive read. Confirms cost.
-- `/qluent:trend` — Multi-period trend analysis. Follow-up.
-- `/qluent:rca` — Standalone root cause analysis. Follow-up.
-- `/qluent:compare` — Side-by-side tree comparison. Follow-up.
 - `/qluent:visualize` — Render the latest analysis as an `RcaReportSpec` (primary) or styled HTML (fallback).
 - `/qluent:setup` — Check installation and configuration.
 
 **Start with `/qluent:investigate` for single-tree questions and
 `/qluent:deep-dive` only when the user explicitly wants a cross-business view.**
-Do NOT manually chain `trend`, `rca`, `compare`, or separate investigations as
-your first step — the bundled commands preserve deterministic server analysis
-and cost consent.
+The bundled `investigate` response already contains trend, RCA, and segment
+findings — for deeper follow-ups, the `qluent-analyst`, `trend-interpreter`,
+`rca-validator`, and `segment-explorer` agents run the underlying `qluent`
+subcommands (`qluent trees trend`, `qluent rca analyze`, `qluent trees compare`)
+directly against the CLI.
 
 ## Protocol — see the qluent-interpretation skill
 

@@ -232,12 +232,13 @@ fi
 
 # Contextual follow-up suggestions
 if $is_investigate; then
-  echo "  → Follow-up skills: /qluent:visualize (RcaReportSpec/charts), /qluent:rca (root cause), /qluent:trend (multi-period), /qluent:compare (cross-tree)"
+  echo "  → Follow-up: /qluent:visualize for an RcaReportSpec; the bundled response already carries trend, RCA, and segment data."
   echo "  → Report options: RCA report, mix-shift report when segment/mix effects exist, or elasticity report for a selected lever/outcome."
+  echo "  → For deeper drills the qluent agents run \`qluent rca analyze\`, \`qluent trees trend\`, and \`qluent trees compare\` directly against the CLI."
 fi
 
 if $is_deep_dive; then
-  echo "  → Follow-up skills: /qluent:investigate, /qluent:rca, /qluent:trend, or /qluent:compare using the ranked next drills from the report."
+  echo "  → Follow-up: /qluent:investigate using the ranked next drills from the report; deeper CLI drills (\`qluent rca analyze\`, \`qluent trees trend\`, \`qluent trees compare\`) run through the qluent agents."
 fi
 
 if $is_trend || $is_rca || $is_compare; then
