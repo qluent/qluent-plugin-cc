@@ -65,6 +65,7 @@ assert_contains "$SKILL" '/tmp/qluent-tree-capabilities.json'
 
 # 2. Allowlist enforcement.
 check_path '/tmp/qluent-viz-data.json' \
+  'plugins/qluent/CLAUDE.md' \
   'plugins/qluent/agents/qluent-analyst.md' \
   'plugins/qluent/commands/investigate.md' \
   'plugins/qluent/commands/visualize.md' \
@@ -75,9 +76,13 @@ check_path '/tmp/qluent-viz-data.json' \
   'tests/test_session_paths.sh'
 
 check_path '/tmp/qluent-deep-dive-bundle.json' \
+  'plugins/qluent/CLAUDE.md' \
   'plugins/qluent/commands/deep-dive.md' \
+  'plugins/qluent/commands/visualize.md' \
   'plugins/qluent/scripts/post-bash.sh' \
+  'plugins/qluent/scripts/render-charts.sh' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_renderer_contract.sh' \
   'tests/test_session_paths.sh'
 
 check_path '/tmp/qluent-tree-capabilities.json' \
