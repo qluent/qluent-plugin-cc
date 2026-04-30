@@ -1,5 +1,5 @@
 ---
-description: Shape the latest qluent analysis output into a UI RcaReportSpec, with gated HTML fallback
+description: Shape the latest qluent analysis output into a UI RcaReportSpec, with insight-driven HTML on request
 argument-hint: "[--file /path/to/json] [--simple] [--html]"
 allowed-tools: Bash(*), Read, Write, Glob
 ---
@@ -8,10 +8,10 @@ allowed-tools: Bash(*), Read, Write, Glob
 
 Shapes the most recent qluent analysis into an outcome-shaped `RcaReportSpec`
 for the Qluent UI. When deterministic RCA or elasticity output is available
-the report spec is the required primary artifact. Local HTML is a fallback
-only on `--simple`/`--html`, an explicit local/browser request, or when the
-UI contract cannot be consumed. Follow the `qluent-interpretation` skill for
-provenance and evidence labels.
+the report spec is the required primary artifact. Explicit local HTML/dashboard
+requests should produce an insight-driven dashboard from the analysis data.
+`--simple` remains the generic renderer fallback. Follow the
+`qluent-interpretation` skill for provenance and evidence labels.
 
 ## Step 0: Load the canonical interpretation protocol
 
@@ -67,11 +67,12 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" /tmp/qluent-viz-data.json 
 echo "Rendered Qluent report fallback: $out"
 ```
 
-**HTML fallback mode** (`--html`, explicit local/browser demo request, or unavailable UI
-contract only): Prefer `render-charts.sh` and a unique `/tmp/qluent-viz-<timestamp>.html`
-path. If custom HTML is unavoidable, drive it only from values present in the qluent JSON
-or explicit user-provided values. Do not invent, infer, or hardcode chart values from
-conversation context.
+**Insight-driven HTML mode** (`--html`, explicit dashboard/local/browser request, or
+unavailable UI contract): Compose custom HTML from the investigation data via the
+`dashboard-design` skill and write it to a unique `/tmp/qluent-viz-<timestamp>.html`
+path. This mode should be specific to the produced analysis, not the generic renderer
+template. Drive every value, label, chart series, caveat, and recommendation from the
+qluent JSON; do not invent, infer, or hardcode chart values from conversation context.
 
 ## Step 3: Build an outcome-shaped RcaReportSpec
 
@@ -163,15 +164,50 @@ named in the skill exactly when present.
 ## Step 4: HTML fallback for local demos
 
 Do not enter this step for normal deterministic RCA or elasticity visualization requests.
-HTML is a local fallback, not the synchronized report artifact.
+HTML is a local/dashboard artifact, not the synchronized report artifact.
 
-Read the JSON data and include only sections whose values map directly from qluent JSON.
-If a value needed for a chart cannot be mapped from the JSON, omit that section or state
-the missing deterministic field/query instead of inventing a placeholder chart.
+For `--html` or explicit dashboard/local/browser requests, first read the dashboard
+design system:
 
-For simple local output, run `render-charts.sh`. If custom HTML is explicitly requested
-and unavoidable, reference the `dashboard-design` skill for styling and keep every chart
-bound to deterministic fields from `/tmp/qluent-viz-data.json` or `--file <path>`.
+```
+${CLAUDE_PLUGIN_ROOT}/skills/dashboard-design/SKILL.md
+```
+
+Then write a unique output path:
+
+```bash
+out="/tmp/qluent-viz-$(date +%Y%m%d-%H%M%S).html"
+```
+
+Compose sections using the skill's insight-to-section mapping and the chosen
+`outcomeShape`. Include only sections whose values map directly from qluent JSON. If a
+value needed for a chart cannot be mapped from the JSON, omit that section or state the
+missing deterministic field/query instead of inventing a placeholder chart.
+
+Suggested single-tree section order (include only those the investigation supports):
+
+1. **Hero** — outcome-specific headline, exact current/comparison windows, root metric
+   movement, and the strongest supported read.
+2. **Root movement KPI strip** — current value, comparison value, absolute movement,
+   percentage movement, confidence, and evidence coverage when returned.
+3. **Driver decomposition** — Shapley/RCA contributors or returned takeaways, charted
+   only from deterministic contribution fields.
+4. **Material segment scan** — segment findings, mix shifts, or hotspot bars/tables
+   when `root_cause.findings[].segment_findings` or `mix_shift` exists.
+5. **Mechanism or elasticity** — mechanism takeaways, lever sensitivity, scenario
+   impact, and guardrails when the bundle includes them.
+6. **Insight callouts** — `.insight`, `.insight-warn`, or `.insight-bad` annotations
+   next to the charts they explain.
+7. **Caveats and next drills** — returned gaps, low-confidence notes, unsupported cuts,
+   and copy-pasteable recommended commands.
+
+For `--simple`, run `render-charts.sh`; this is the deliberately generic fallback:
+
+```bash
+out="/tmp/qluent-viz-$(date +%Y%m%d-%H%M%S).html"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" /tmp/qluent-viz-data.json "$out"
+echo "Rendered Qluent report fallback: $out"
+```
 
 ## Step 5: Open fallback HTML in browser
 
@@ -190,8 +226,9 @@ xdg-open "$out"
   elasticity output is available.
 - Do not hand-roll report HTML when the UI contract can be used.
 - Use unique fallback HTML output paths; do not silently reuse stale dashboards.
-- Use the `dashboard-design` skill for HTML fallback styling — do not invent
-  new styles.
+- Use the `dashboard-design` skill for explicit HTML/dashboard output so the
+  visualization follows the produced analysis, not a fixed template.
+- Use `render-charts.sh` only for `--simple` generic fallback output.
 - Section titles are insight statements, not generic labels.
 - Only include sections backed by actual data; omit the section or state the
   missing deterministic field if values cannot be mapped from the JSON.
