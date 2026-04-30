@@ -1,7 +1,7 @@
 ---
 description: Run a consented cross-tree deep dive and synthesize one executive narrative across all metric trees
 argument-hint: "[period | --period 'last week' | YYYY-MM-DD:YYYY-MM-DD] [--yes] [--brief]"
-allowed-tools: Bash(which qluent), Bash(qluent *), AskUserQuestion, Read
+allowed-tools: Bash(which qluent), Bash(qluent *), AskUserQuestion, Read, Write
 ---
 
 # Deep dive across metric trees
@@ -177,6 +177,63 @@ Rules for synthesis:
 - Keep concise. If `--brief` is present, use shorter bullets but still include
   all five headings.
 
+## Step 7: Render the insight-driven HTML dashboard
+
+After delivering the markdown narrative, produce a companion HTML dashboard from
+the same bundle. This is the primary visual artifact for `/qluent:deep-dive`:
+the layout reflects what the bundle says, not a fixed template.
+
+Read the dashboard design system before composing the HTML:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/dashboard-design/SKILL.md
+```
+
+Write the dashboard to a unique path so older runs do not collide:
+
+```
+/tmp/qluent-deep-dive-$(date +%Y%m%d-%H%M%S).html
+```
+
+Compose sections using the skill's insight-to-section mapping, biased toward the
+cross-tree shape of a deep-dive bundle. Drive every value, label, and chart
+series from the bundle JSON; do not invent figures or fill placeholders.
+
+Suggested cross-tree section order (include only those the bundle supports):
+
+1. **Hero** — insight-driven headline (e.g. "Restaurants collapsed, express
+   surged"), period, executive read, decisive metric in `<em>` colored per the
+   skill's color conventions.
+2. **KPI strip** — one card per tree with root metric label, current value,
+   comparison value, absolute and percentage movement. Color deltas with
+   `.up`/`.down`.
+3. **Cross-tree concentration** — hotspot grid for repeated segments across
+   trees, using stat blocks or a priority table from the skill.
+4. **Mechanism** — strongest supported mechanism (volume, AOV, mix, conversion,
+   ops quality) using mechanism decomposition or mix-effect components when the
+   bundle supports them.
+5. **Per-tree drill-down cards** — short cards for trees that materially moved,
+   each with its top driver and a Chart.js bar/line bound to bundle series.
+   Omit trees that did not move materially.
+6. **Insight callouts** — `.insight`, `.insight-warn`, or `.insight-bad`
+   callouts under the most important charts. These surface the takeaways from
+   the markdown Headline, Concentration, and Mechanism sections beside the data.
+7. **Caveats** — stat block or list mirroring the markdown Caveats section
+   (errored trees, low-confidence findings, sparse data, unsupported cuts).
+8. **Next-best drills** — priority table or list of the same copy-pasteable
+   commands as the markdown Next-best drills.
+
+Section titles must be insight statements, not generic labels. Only include
+sections backed by actual bundle data; omit a section rather than render an
+empty placeholder.
+
+After writing the file, surface the path so the user can open it locally:
+
+```
+Wrote insight-driven dashboard: /tmp/qluent-deep-dive-<timestamp>.html
+Open with `open <path>` (macOS) or `xdg-open <path>` (Linux).
+```
+
 ## Next-best drill command format
 
 Recommended next drills must be copy-pasteable and valid for this plugin/project.
@@ -206,3 +263,6 @@ order. Include why each drill is recommended in one sentence.
 - Per-tree errors and low-confidence findings must appear in Caveats.
 - Recommendations must be concrete `/qluent:investigate` slash commands or
   underlying `qluent` CLI subcommands — never paraphrased actions.
+- Always render an insight-driven HTML dashboard via the `dashboard-design`
+  skill alongside the markdown narrative. Section composition is data-driven,
+  not templated; only include sections the bundle supports.
