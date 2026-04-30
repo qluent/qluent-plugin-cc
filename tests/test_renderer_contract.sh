@@ -55,6 +55,14 @@ assert_contains "$ROOT/plugins/qluent/commands/visualize.md" \
   "outcomeShape: 'driver_concentration' | 'mix_shift' | 'elasticity_tradeoff' | 'data_quality_blocker' | 'cross_tree_bundle' | string"
 assert_contains "$ROOT/plugins/qluent/commands/visualize.md" \
   'cross_tree_hotspot_grid'
+assert_contains "$ROOT/plugins/qluent/commands/visualize.md" \
+  '**Insight-driven HTML mode**'
+assert_contains "$ROOT/plugins/qluent/commands/visualize.md" \
+  '${CLAUDE_PLUGIN_ROOT}/skills/dashboard-design/SKILL.md'
+assert_contains "$ROOT/plugins/qluent/commands/visualize.md" \
+  'Suggested single-tree section order'
+assert_contains "$ROOT/plugins/qluent/commands/visualize.md" \
+  'Use `render-charts.sh` only for `--simple` generic fallback output.'
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
