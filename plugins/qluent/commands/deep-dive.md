@@ -1,7 +1,7 @@
 ---
 description: Run a consented cross-tree deep dive and synthesize one executive narrative across all metric trees
 argument-hint: "[period | --period 'last week' | YYYY-MM-DD:YYYY-MM-DD] [--yes] [--brief]"
-allowed-tools: Bash(which qluent), Bash(qluent *), AskUserQuestion, Read, Write
+allowed-tools: Bash(which qluent), Bash(qluent *), Bash(date *), AskUserQuestion, Read, Write
 ---
 
 # Deep dive across metric trees

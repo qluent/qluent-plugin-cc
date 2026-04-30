@@ -33,9 +33,10 @@ assert_not_contains() {
 # 1. The dashboard-design skill referenced by deep-dive.md must actually exist.
 [[ -f "$SKILL" ]] || fail "missing skill referenced by deep-dive.md: $SKILL"
 
-# 2. deep-dive.md frontmatter must allow Write so the model can save the HTML.
+# 2. deep-dive.md frontmatter must allow Write so the model can save the HTML,
+#    and date so the timestamped output path can be resolved.
 assert_contains "$DEEP_DIVE" \
-  'allowed-tools: Bash(which qluent), Bash(qluent *), AskUserQuestion, Read, Write'
+  'allowed-tools: Bash(which qluent), Bash(qluent *), Bash(date *), AskUserQuestion, Read, Write'
 
 # 3. deep-dive.md must include the insight-driven HTML rendering step and link
 #    it to the dashboard-design skill.
