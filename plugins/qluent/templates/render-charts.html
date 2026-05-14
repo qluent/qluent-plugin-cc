@@ -262,6 +262,46 @@
     padding: 40px;
     font-size: 0.9rem;
   }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+  .data-table th {
+    text-align: left;
+    color: #6b7280;
+    font-weight: 600;
+    border-bottom: 1px solid #e8e8ef;
+    padding: 8px 6px;
+  }
+  .data-table td {
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+    padding: 9px 6px;
+    vertical-align: top;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .deep-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 720px) {
+    .deep-grid { grid-template-columns: 1fr; }
+    .main { padding: 24px 14px 48px; }
+    .data-table { font-size: 0.72rem; }
+  }
   .hidden { display: none; }
 </style>
 </head>
@@ -389,6 +429,67 @@ function getConfidenceConclusion(data) {
 function getTakeaways(data) {
   return data?.root_cause?.conclusion?.takeaways || [];
 }
+function isDeepDiveBundle(data) {
+  return Array.isArray(data?.trees);
+}
+function firstPresent(...values) {
+  return values.find(v => v != null && v !== '');
+}
+function unwrapTree(tree) {
+  return tree?.result || tree?.analysis || tree?.payload || tree || {};
+}
+function getTreeRoot(tree) {
+  const data = unwrapTree(tree);
+  return firstPresent(data.root_movement, data.root, data.evaluation?.root, data.evaluation?.root_metric)
+    || (data.evaluation?.nodes || []).find(n => n.parent_id === null)
+    || {};
+}
+function getTreeStatus(tree) {
+  const data = unwrapTree(tree);
+  if (tree?.error || data?.error) return 'error';
+  return firstPresent(tree?.status, data?.status, data?.agent?.status, 'ok');
+}
+function collectDeepDiveHotspots(data) {
+  const direct = firstPresent(data.hotspots, data.segment_hotspots, data.concentrated_segments, data.cross_tree_hotspots);
+  const rows = Array.isArray(direct) ? direct.map(h => ({...h})) : [];
+  (data.trees || []).forEach(tree => {
+    const tdata = unwrapTree(tree);
+    const treeLabel = firstPresent(tree.tree_label, tree.label, tdata.tree_label, tdata.tree_id, tree.tree_id);
+    const findings = [
+      ...(tdata.root_cause?.findings || []),
+      ...(tdata.segment_findings || []),
+      ...(tdata.hotspots || [])
+    ];
+    findings.forEach(f => {
+      const segments = f.segment_findings || f.segments || (f.segment ? [f] : []);
+      segments.forEach(s => rows.push({
+        tree_label: treeLabel,
+        dimension: firstPresent(s.dimension, s.segment_dimension, f.dimension),
+        segment: firstPresent(s.segment, s.segment_value, s.value, f.segment),
+        contribution: firstPresent(s.contribution, s.delta_value, s.effect_value, f.contribution),
+        materiality: firstPresent(s.materiality, s.share, s.delta_share, f.materiality),
+        direction: firstPresent(s.direction, f.direction)
+      }));
+    });
+  });
+  return rows.filter(h => firstPresent(h.segment, h.segment_value, h.dimension, h.tree_label));
+}
+function collectDeepDiveOverlap(data) {
+  const direct = firstPresent(data.overlap, data.cross_tree_overlap, data.shared_segments, data.correlations);
+  if (Array.isArray(direct)) return direct;
+  if (direct && typeof direct === 'object') return Object.values(direct).flat().filter(Boolean);
+  return [];
+}
+function collectDeepDiveCaveats(data) {
+  const caveats = [...(data.caveats || []), ...(data.gaps || [])];
+  (data.trees || []).forEach(tree => {
+    const tdata = unwrapTree(tree);
+    const label = firstPresent(tree.tree_label, tree.label, tdata.tree_label, tree.tree_id, tdata.tree_id, 'Tree');
+    [...(tdata.caveats || []), ...(tdata.gaps || []), ...(tdata.agent?.gaps || [])].forEach(c => caveats.push(label + ': ' + c));
+    if (tree.error || tdata.error) caveats.push(label + ': ' + (tree.error || tdata.error));
+  });
+  return caveats;
+}
 </script>
 
 <div class="main">
@@ -407,6 +508,13 @@ function getTakeaways(data) {
 
 <script>
 (function() {
+  if (isDeepDiveBundle(qdata)) {
+    const label = qdata.title || qdata.period_label || 'Cross-tree Deep Dive';
+    document.getElementById('dash-title').textContent = label;
+    document.getElementById('dash-period').textContent = firstPresent(qdata.period, qdata.period_label, qdata.current_window?.date_from && qdata.current_window?.date_to ? qdata.current_window.date_from + ' to ' + qdata.current_window.date_to : '');
+    document.querySelector('.topbar .page-title').textContent = 'Cross-tree Deep Dive';
+    return;
+  }
   const label = qdata.tree_label || qdata.tree_id || 'Metric';
   document.getElementById('dash-title').textContent = label + ' Analysis';
   document.getElementById('dash-period').textContent = qdata.period_label || '';
@@ -461,6 +569,151 @@ function getTakeaways(data) {
 })();
 </script>
 
+<!-- Cross-tree deep-dive bundle -->
+<div class="card hidden" id="deep-dive-section">
+  <h2>Cross-tree Root Movement</h2>
+  <div class="sub">Bundle-level summary mapped from <code>trees[]</code></div>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tree</th>
+          <th>Root metric</th>
+          <th>Current</th>
+          <th>Comparison</th>
+          <th>Movement</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="deep-root-rows"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="deep-grid hidden" id="deep-detail-grid">
+  <div class="card" id="deep-hotspots-card">
+    <h2>Segment Hotspots</h2>
+    <div class="sub">Concentrated segment findings across trees</div>
+    <div id="deep-hotspots"></div>
+  </div>
+  <div class="card" id="deep-overlap-card">
+    <h2>Cross-tree Overlap</h2>
+    <div class="sub">Shared segments, repeated dimensions, or explicit gaps</div>
+    <div id="deep-overlap"></div>
+  </div>
+</div>
+
+<div class="card hidden" id="deep-drivers-section">
+  <h2>Driver Decomposition</h2>
+  <div class="sub">Per-tree top drivers from the bundle</div>
+  <div id="deep-drivers"></div>
+</div>
+
+<div class="card hidden" id="deep-caveats-section">
+  <h2>Caveats and Next Drills</h2>
+  <div id="deep-caveats"></div>
+</div>
+
+<script>
+(function() {
+  if (!isDeepDiveBundle(qdata)) return;
+
+  const rootRows = document.getElementById('deep-root-rows');
+  qdata.trees.forEach(tree => {
+    const data = unwrapTree(tree);
+    const root = getTreeRoot(tree);
+    const treeLabel = firstPresent(tree.tree_label, tree.label, data.tree_label, tree.tree_id, data.tree_id, 'Tree');
+    const deltaRatio = firstPresent(root.delta_ratio, root.percentage_change, data.delta_ratio);
+    const deltaValue = firstPresent(root.delta_value, root.absolute_change, data.delta_value);
+    rootRows.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td>${esc(treeLabel)}</td>
+        <td>${esc(firstPresent(root.label, root.name, root.id, data.root_metric_label, 'Root metric'))}</td>
+        <td>${fmtCurrency(firstPresent(root.current_value, data.current_value))}</td>
+        <td>${fmtCurrency(firstPresent(root.comparison_value, root.compare_value, data.comparison_value))}</td>
+        <td><span class="${deltaClass(deltaValue)}">${fmtCurrency(deltaValue)}</span>${deltaRatio != null ? '<br>' + esc(fmtPctFlexible(deltaRatio)) : ''}</td>
+        <td><span class="pill">${esc(String(getTreeStatus(tree)).replace(/_/g, ' '))}</span></td>
+      </tr>`);
+  });
+  document.getElementById('deep-dive-section').classList.remove('hidden');
+
+  const hotspots = collectDeepDiveHotspots(qdata);
+  const hotspotsEl = document.getElementById('deep-hotspots');
+  if (hotspots.length) {
+    hotspotsEl.innerHTML = '<table class="data-table"><thead><tr><th>Tree</th><th>Segment</th><th>Dimension</th><th>Effect</th></tr></thead><tbody>'
+      + hotspots.slice(0, 12).map(h => `
+        <tr>
+          <td>${esc(firstPresent(h.tree_label, h.tree, h.tree_id, 'Cross-tree'))}</td>
+          <td>${esc(firstPresent(h.segment, h.segment_value, h.value, 'Segment'))}</td>
+          <td>${esc(firstPresent(h.dimension, h.segment_dimension, 'Dimension'))}</td>
+          <td>${esc(firstPresent(h.summary, h.direction, h.materiality != null ? fmtPctFlexible(h.materiality) : null, h.contribution != null ? fmtCurrency(h.contribution) : null, 'Returned'))}</td>
+        </tr>`).join('')
+      + '</tbody></table>';
+  } else {
+    hotspotsEl.innerHTML = '<div class="finding-item">No segment hotspots were returned in this bundle.</div>';
+  }
+
+  const overlap = collectDeepDiveOverlap(qdata);
+  const overlapEl = document.getElementById('deep-overlap');
+  if (overlap.length) {
+    overlap.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'finding-item';
+      div.textContent = typeof item === 'string' ? item : firstPresent(item.summary, item.description, item.segment, JSON.stringify(item));
+      overlapEl.appendChild(div);
+    });
+  } else {
+    overlapEl.innerHTML = '<div class="finding-item">No cross-tree overlap was returned in this bundle.</div>';
+  }
+  document.getElementById('deep-detail-grid').classList.remove('hidden');
+
+  const driversEl = document.getElementById('deep-drivers');
+  qdata.trees.forEach(tree => {
+    const data = unwrapTree(tree);
+    const treeLabel = firstPresent(tree.tree_label, tree.label, data.tree_label, tree.tree_id, data.tree_id, 'Tree');
+    const drivers = getRootContributors(data).slice(0, 5);
+    if (!drivers.length) return;
+    const h = document.createElement('div');
+    h.className = 'section-heading';
+    h.textContent = treeLabel;
+    driversEl.appendChild(h);
+    drivers.forEach(driver => {
+      const div = document.createElement('div');
+      div.className = 'finding-item';
+      div.textContent = firstPresent(driver.summary, driver.label, driver.node_id, 'Driver')
+        + (driver.delta_value != null ? ' ' + fmtCurrency(driver.delta_value) : '')
+        + (driver.delta_share != null ? ' (' + (driver.delta_share * 100).toFixed(0) + '% of change)' : '');
+      driversEl.appendChild(div);
+    });
+  });
+  if (driversEl.children.length) document.getElementById('deep-drivers-section').classList.remove('hidden');
+
+  const caveatsEl = document.getElementById('deep-caveats');
+  collectDeepDiveCaveats(qdata).forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'gap-item';
+    div.textContent = c;
+    caveatsEl.appendChild(div);
+  });
+  const steps = firstPresent(qdata.recommended_next_steps, qdata.next_drills, qdata.agent?.recommended_next_steps, []);
+  if (steps.length) {
+    const h = document.createElement('div');
+    h.className = 'section-heading';
+    h.textContent = 'Next Drills';
+    caveatsEl.appendChild(h);
+    steps.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'next-step';
+      div.innerHTML = '<div class="step-title">' + esc(firstPresent(s.title, s.summary, 'Next drill')) + '</div>'
+        + '<div class="step-why">' + esc(firstPresent(s.why, s.reason, '')) + '</div>'
+        + (s.command ? '<code>' + esc(s.command) + '</code>' : '');
+      caveatsEl.appendChild(div);
+    });
+  }
+  if (caveatsEl.children.length) document.getElementById('deep-caveats-section').classList.remove('hidden');
+})();
+</script>
+
 <!-- Agent Findings -->
 <div class="findings-card" id="agent-section">
   <h2 id="agent-title">Key Findings</h2>
@@ -469,6 +722,7 @@ function getTakeaways(data) {
 </div>
 <script>
 (function() {
+  if (isDeepDiveBundle(qdata)) { document.getElementById('agent-section').classList.add('hidden'); return; }
   const agent = qdata.agent || {};
   const takeaways = getTakeaways(qdata);
   if (!agent.top_findings?.length && !takeaways.length) { document.getElementById('agent-section').classList.add('hidden'); return; }
@@ -548,6 +802,7 @@ function getTakeaways(data) {
 </div>
 <script>
 (function() {
+  if (isDeepDiveBundle(qdata)) { document.getElementById('eval-section').classList.add('hidden'); return; }
   const children = window._evalChildren;
   if (!children || !children.length) { document.getElementById('eval-section').classList.add('hidden'); return; }
 
@@ -619,6 +874,7 @@ function getTakeaways(data) {
 </div>
 <script>
 (function() {
+  if (isDeepDiveBundle(qdata)) { document.getElementById('waterfall-section').classList.add('hidden'); return; }
   const root = window._evalRoot;
   if (!root || !root.contributions || !root.contributions.length) {
     document.getElementById('waterfall-section').classList.add('hidden'); return;
@@ -682,6 +938,7 @@ function getTakeaways(data) {
 </div>
 <script>
 (function() {
+  if (isDeepDiveBundle(qdata)) { document.getElementById('trend-section').classList.add('hidden'); return; }
   const evals = qdata.trend?.evaluations || [];
   const periods = qdata.trend?.periods || [];
 
@@ -773,6 +1030,7 @@ function getTakeaways(data) {
 </div>
 <script>
 (function() {
+  if (isDeepDiveBundle(qdata)) { document.getElementById('rca-section').classList.add('hidden'); return; }
   const contributors = getRootContributors(qdata);
   if (!contributors.length) { document.getElementById('rca-section').classList.add('hidden'); return; }
 
@@ -838,6 +1096,7 @@ function getTakeaways(data) {
 </div>
 <script>
 (function() {
+  if (isDeepDiveBundle(qdata)) { document.getElementById('confidence-section').classList.add('hidden'); return; }
   const rc = qdata.root_cause || {};
   const conclusion = getConfidenceConclusion(qdata);
   const score = conclusion.confidence_score;
@@ -876,6 +1135,7 @@ function getTakeaways(data) {
 </div>
 <script>
 (function() {
+  if (isDeepDiveBundle(qdata)) { document.getElementById('compare-section').classList.add('hidden'); return; }
   const t1 = qdata.tree1;
   const t2 = qdata.tree2;
   if (!t1 || !t2) { document.getElementById('compare-section').classList.add('hidden'); return; }
@@ -934,7 +1194,7 @@ function getTakeaways(data) {
 </div>
 <script>
 (function() {
-  const sections = ['eval-section', 'waterfall-section', 'trend-section', 'rca-section', 'confidence-section', 'compare-section'];
+  const sections = ['deep-dive-section', 'eval-section', 'waterfall-section', 'trend-section', 'rca-section', 'confidence-section', 'compare-section'];
   const anyVisible = sections.some(id => !document.getElementById(id).classList.contains('hidden'));
   if (!anyVisible) document.getElementById('no-data-section').classList.remove('hidden');
 })();
