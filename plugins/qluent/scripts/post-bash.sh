@@ -75,6 +75,45 @@ join_by() {
   done
 }
 
+print_analysis_run_references() {
+  local payload_path="$1"
+
+  [ -f "$payload_path" ] || return 0
+  "$jq_bin" -e 'type == "object"' "$payload_path" >/dev/null 2>&1 || return 0
+
+  local -a runs=()
+  local line
+  while IFS= read -r line; do
+    [ -n "$line" ] && runs+=("$line")
+  done < <("$jq_bin" -r '
+    [
+      .. | objects
+      | select((.analysis_run_uuid? // "") != "")
+      | [(.tree_id // .tree_label // .id // "analysis"), .analysis_run_uuid]
+      | @tsv
+    ]
+    | unique
+    | .[]
+  ' "$payload_path" 2>/dev/null)
+
+  [ ${#runs[@]} -gt 0 ] || return 0
+
+  if [ ${#runs[@]} -eq 1 ]; then
+    local tree_id run_id
+    IFS=$'\t' read -r tree_id run_id <<< "${runs[0]}"
+    echo "  → Analysis run: ${run_id}"
+  else
+    echo "  → Analysis runs:"
+    for line in "${runs[@]}"; do
+      local tree_id run_id
+      IFS=$'\t' read -r tree_id run_id <<< "$line"
+      echo "    - ${tree_id}: ${run_id}"
+    done
+  fi
+
+  echo "  → Use AnalysisRun ids as durable handles for follow-ups; fetch or continue the saved run before rerunning when the CLI supports it."
+}
+
 build_fallback_guidance() {
   local command_text="$1"
   local viz_path="$2"
@@ -184,11 +223,13 @@ if [[ "$command" == *"--json-output"* ]]; then
   if $is_deep_dive; then
     if [ -f "$deep_dive_file" ]; then
       echo "  → Deep-dive bundle saved. Synthesize one cross-tree narrative; do not split it into separate tree reports."
+      print_analysis_run_references "$deep_dive_file"
     else
       echo "  → To cache the deep-dive bundle for follow-up questions, pipe output through: | tee /tmp/qluent-deep-dive-bundle.json"
     fi
   elif [ -f "$viz_file" ]; then
     echo "  → Visualization data saved. Use /qluent:visualize to produce a UI RcaReportSpec first; use styled HTML only as a local fallback."
+    print_analysis_run_references "$viz_file"
   else
     echo "  → To enable /qluent:visualize, pipe output through: | tee /tmp/qluent-viz-data.json"
   fi

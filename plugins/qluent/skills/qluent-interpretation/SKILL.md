@@ -48,6 +48,36 @@ user changed it.
 When current and comparison windows have different day counts, surface that as
 a caveat near the headline.
 
+## AnalysisRun handles
+
+Metric-tree investigation responses may include `analysis_run_uuid`. Treat
+that value as the persisted `AnalysisRun` id and the handoff object for the
+Claude Code workflow:
+
+```text
+question -> persisted AnalysisRun -> lever/root-cause breakdown -> insights -> recommended actions
+```
+
+When the field is present:
+
+- Carry it into progress notes, intermediate summaries, final answers, agent
+  handoffs, visualization/report sources, and follow-up prompts.
+- Include this human-readable line in user-facing summaries:
+  `Analysis run: <analysis_run_uuid>`.
+- Keep the id attached to the tree id, windows, and deterministic JSON that
+  produced the finding.
+
+When the field is absent, treat the payload as a legacy response. Continue the
+analysis from the returned JSON and do not fabricate a run id.
+
+When a user provides an existing `analysis_run_uuid`, prefer continuing from
+that saved run over creating a fresh investigation. First check whether the id
+matches the current `/tmp/qluent-viz-data.json` payload. If the installed
+qluent CLI exposes list/get commands for saved analysis runs, fetch the run and
+continue from that payload. If the installed CLI cannot fetch saved
+AnalysisRuns yet and the cached payload does not match, say so plainly and ask
+for enough tree/window context before running a new investigation.
+
 ## Quantitative claims
 
 Every metric value, delta, decomposition, segment ranking, elasticity estimate,
@@ -191,7 +221,8 @@ updating that allowlist on purpose.
   fallback.
 - **Schema:** the full investigate response, including `tree_id`,
   `tree_label`, `current_window`, `comparison_window`, `agent`, `evaluation`,
-  `root_cause`, `levers`, `validation`, `warnings`.
+  `root_cause`, `levers`, `validation`, `warnings`, and optional
+  `analysis_run_uuid`.
 - **Freshness:** consumers should verify `current_window.date_from` is recent
   and the `tree_id` matches the question before rendering. Stale or
   mismatched data triggers a re-run suggestion.
