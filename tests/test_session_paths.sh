@@ -71,6 +71,7 @@ check_path '/tmp/qluent-viz-data.json' \
   'plugins/qluent/scripts/post-bash.sh' \
   'plugins/qluent/scripts/render-charts.sh' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_analysis_run_handles.sh' \
   'tests/test_renderer_contract.sh' \
   'tests/test_session_paths.sh'
 
@@ -78,6 +79,7 @@ check_path '/tmp/qluent-deep-dive-bundle.json' \
   'plugins/qluent/commands/deep-dive.md' \
   'plugins/qluent/scripts/post-bash.sh' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_analysis_run_handles.sh' \
   'tests/test_session_paths.sh'
 
 check_path '/tmp/qluent-tree-capabilities.json' \

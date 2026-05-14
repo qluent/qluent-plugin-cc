@@ -33,6 +33,11 @@ show what's possible.
 
 ## Workflow
 
+If the user provides an `analysis_run_uuid`, follow the AnalysisRun handle
+rules in the `qluent-interpretation` skill first. Continue from a matching
+cached or fetched saved run when available instead of starting by rerunning the
+investigation.
+
 ### Step 1: Pick a tree, then investigate
 
 Resolve the tree id per the skill. If the user named a tree explicitly, use
@@ -49,7 +54,9 @@ Always pipe through `tee` to auto-save visualization data.
 
 Read the JSON. The `agent` section contains `status`, `top_findings`, `gaps`,
 and `recommended_next_steps`. The `levers` section embeds elasticity data
-when available. Run the recommended follow-ups before inventing your own.
+when available. If `analysis_run_uuid` is present, carry it into the final
+answer and any agent or CLI follow-up context. Run the recommended follow-ups
+before inventing your own.
 
 ### Step 3: Follow up autonomously
 
@@ -104,8 +111,9 @@ RCA+trend+compare triangulation, or segment pivot-and-synthesis.
    server response.
 3. **Confidence** — present the returned evidence-coverage score per the skill.
 4. **Windows** — state the exact date ranges used.
-5. **Follow-ups** — 2-3 concrete next steps tailored to the data.
-6. **Gaps** — say so explicitly when something is unresolved.
+5. **Analysis run** — include `Analysis run: <analysis_run_uuid>` when present.
+6. **Follow-ups** — 2-3 concrete next steps tailored to the data.
+7. **Gaps** — say so explicitly when something is unresolved.
 
 If RCA times out on broad ranges, suggest quarterly breakdowns. Every other
 rule about JSON output, tree-id discipline, provenance, and how to handle

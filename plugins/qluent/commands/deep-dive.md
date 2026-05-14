@@ -127,7 +127,8 @@ one exact schema. Look for:
 
 - bundle-level period/current/comparison windows
 - per-tree result objects with tree id, label, status, root movement, evaluation,
-  root cause, trend, segment findings, levers, agent findings, gaps, and errors
+  root cause, trend, segment findings, levers, agent findings, gaps, errors, and
+  optional `analysis_run_uuid`
 - cross-tree findings, concentrations, correlations, shared segments, recommended
   next steps, caveats, and confidence metadata
 
@@ -170,6 +171,8 @@ Rules for synthesis:
   relationship unless the data explicitly supports causal language.
 - If a single tree dominates the story, say so and state whether other trees
   confirm, contradict, or are inconclusive.
+- If per-tree `analysis_run_uuid` values are present, include them as
+  AnalysisRun references so follow-up drills can continue from saved runs.
 - Keep concise. If `--brief` is present, use shorter bullets but still include
   all five headings.
 

@@ -54,6 +54,10 @@ findings — for deeper follow-ups, the `qluent-analyst`, `trend-interpreter`,
 subcommands (`qluent trees trend`, `qluent rca analyze`, `qluent trees compare`)
 directly against the CLI.
 
+If an investigation returns `analysis_run_uuid`, treat that persisted
+AnalysisRun id as the durable handle for summaries, reports, and follow-up
+analysis. The detailed handle rules live in the `qluent-interpretation` skill.
+
 ## Protocol — see the qluent-interpretation skill
 
 All metric values, deltas, decompositions, segment rankings, elasticity

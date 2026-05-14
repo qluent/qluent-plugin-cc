@@ -23,6 +23,11 @@ ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
 
 ## Step 1: Question vs tree id
 
+If `$ARGUMENTS` contains an existing `analysis_run_uuid`, follow the
+AnalysisRun handle rules in the `qluent-interpretation` skill before running a
+new investigation. Prefer a matching cached or fetched saved run when
+available.
+
 If `$ARGUMENTS` is empty, ends with `?`, contains spaces, or contains words
 like `why`, `what`, `how`, `drove`, `drop`, `spike`, treat it as a question
 and resolve a tree (Step 2). If it is a single token (`revenue`, `roas`,
@@ -57,7 +62,9 @@ qluent trees investigate <tree_id> --current YYYY-MM-DD:YYYY-MM-DD --compare YYY
 
 The response includes an `agent` section with `status`, `top_findings`,
 `gaps`, and `recommended_next_steps`. The `levers` section embeds elasticity
-data when available. Run the recommended follow-ups before inventing your own.
+data when available. If the response includes `analysis_run_uuid`, carry it
+through every follow-up as the saved AnalysisRun handle. Run the recommended
+follow-ups before inventing your own.
 
 For complex cases, the server may recommend launching `trend-interpreter`,
 `rca-validator`, or `segment-explorer` in parallel.
@@ -65,6 +72,7 @@ For complex cases, the server may recommend launching `trend-interpreter`,
 ## Step 6: Summarize and suggest
 
 - Lead with the top findings from the server response.
+- When present, include `Analysis run: <analysis_run_uuid>`.
 - State the exact current and comparison windows.
 - End with 2-3 concrete follow-up suggestions tailored to the data.
 

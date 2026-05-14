@@ -29,6 +29,8 @@ that path instead. If the file doesn't exist or is empty, tell the user to run
 
 **Freshness check:** Read the file and verify `current_window.date_from` is recent. If the
 data looks stale (wrong tree, old dates), warn the user and suggest re-running investigate.
+If the payload includes `analysis_run_uuid`, preserve it as the saved
+AnalysisRun handle for the rendered report.
 
 ## Step 2: Choose report mode
 
@@ -74,6 +76,7 @@ Read the JSON data and map the deterministic qluent fields into an ordered repor
 ```ts
 {
   outcomeShape: 'driver_concentration' | 'mix_shift' | 'elasticity_tradeoff' | 'data_quality_blocker' | string,
+  analysis_run_uuid?: string,
   sections: [
     { type: 'root_movement', data: ... },
     { type: 'driver_decomposition', data: ... },
@@ -132,8 +135,9 @@ tree id/label, node/segment, exact windows, materiality, and
 confidence/evidence coverage. Returned caveats (gaps, low confidence, sparse
 samples, missing dimensions, unsupported cuts, guardrail warnings, stale or
 unequal-length windows) flow into top-level `caveats[]`. Result references
-and data lineage flow into `sources[]`. Use the returned evidence labels
-named in the skill exactly when present.
+and data lineage flow into `sources[]`. When present, `analysis_run_uuid`
+flows into both the top-level report id field and the relevant source entries.
+Use the returned evidence labels named in the skill exactly when present.
 
 ## Step 4: HTML fallback for local demos
 
