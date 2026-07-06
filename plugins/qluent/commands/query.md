@@ -74,12 +74,27 @@ Run with a long Bash timeout (600000 ms) and save the JSON for this session:
 
 ```bash
 set -o pipefail
-qluent query "<question>" --json-output | tee /tmp/qluent-query-result.json
+umask 077
+question=$(command cat <<'QLUENT_QUERY'
+<question>
+QLUENT_QUERY
+)
+rm -f /tmp/qluent-query-result.json
+qluent query "$question" --json-output | tee /tmp/qluent-query-result.json
 ```
 
-`pipefail` preserves qluent's exit status through the tee — without it a
-failed CLI run exits 0 (tee's status) and leaves an empty or invalid saved
-file that downstream steps would silently consume.
+This shape is load-bearing, not style:
+
+- The quoted heredoc keeps the user-controlled question text inert — pasted
+  directly inside quotes, `$(...)`, backticks, or embedded quotes in the
+  question would execute or break the command. `command cat` bypasses any
+  shell alias on `cat`.
+- `pipefail` preserves qluent's exit status through the tee — without it a
+  failed CLI run exits 0 (tee's status) and leaves an invalid saved file that
+  downstream steps would silently consume.
+- `umask 077` + `rm -f` recreate the saved file private to the current user
+  each round (results can contain warehouse rows and SQL) and clobber any
+  stale file or symlink already at the fixed path.
 
 If the user passed `--thread <id>` (or this is a follow-up / clarification
 answer), add `--thread <thread_id>`. Keep stderr out of the saved file:
@@ -102,8 +117,18 @@ present the clarification `message` and its `options` to the user with
 
 ```bash
 set -o pipefail
-qluent query "<the user's answer>" --thread <thread_id> --json-output | tee /tmp/qluent-query-result.json
+umask 077
+answer=$(command cat <<'QLUENT_ANSWER'
+<the user's answer>
+QLUENT_ANSWER
+)
+rm -f /tmp/qluent-query-result.json
+qluent query "$answer" --thread <thread_id> --json-output | tee /tmp/qluent-query-result.json
 ```
+
+(The answer text is user-controlled too — same quoted-heredoc rule as Step 3.
+The `<thread_id>` comes from the previous qluent response, so plain
+substitution is fine there.)
 
 Cap the loop at 3 rounds; after that, report the open ambiguity to the user
 instead of looping further.
