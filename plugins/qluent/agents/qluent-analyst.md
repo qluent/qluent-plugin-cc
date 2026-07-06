@@ -1,6 +1,6 @@
 ---
 name: qluent-analyst
-description: Proactively use when the user asks about business metrics, KPI movements, revenue/cost/ROAS/conversion changes, or why a metric went up or down. Autonomously runs the full investigation workflow — investigate, then follow up with trend, RCA, or tree comparison as needed until the question is fully answered.
+description: Proactively use when the user asks about business metrics, KPI movements, revenue/cost/ROAS/conversion changes, or why a metric went up or down — or ad-hoc data questions (row-level lookups, entity lists, arbitrary cuts) which it answers via `qluent query` when no metric tree fits. Autonomously runs the full investigation workflow — investigate, then follow up with trend, RCA, or tree comparison as needed until the question is fully answered.
 tools: Bash
 skills:
   - qluent-interpretation
@@ -37,6 +37,22 @@ If the user provides an `analysis_run_uuid`, follow the AnalysisRun handle
 rules in the `qluent-interpretation` skill first. Continue from a matching
 cached or fetched saved run when available instead of starting by rerunning the
 investigation.
+
+### Step 0: Route tree vs ad-hoc query
+
+Apply the skill's ad-hoc query routing rule first. When the question routes
+to an ad-hoc query (row/entity level, no tree coverage, SQL-shaped, or an
+explicit raw-data ask), run:
+
+```bash
+qluent query "<question>" --json-output | tee /tmp/qluent-query-result.json
+```
+
+Check `status`: on `clarification_needed`, present the options and re-run
+with `--thread <thread_id>` and the answer; on `ok`, present the result with
+its SQL and label the provenance as an ad-hoc query per the skill, then stop —
+the tree workflow below does not apply. When a tree fits, proceed with
+Step 1 unchanged.
 
 ### Step 1: Pick a tree, then investigate
 

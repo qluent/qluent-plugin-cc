@@ -71,4 +71,10 @@ assert_contains "$ROOT/plugins/qluent/agents/rca-validator.md" 'qluent trees tre
 assert_contains "$ROOT/plugins/qluent/agents/rca-validator.md" 'qluent rca analyze'
 assert_contains "$ROOT/plugins/qluent/agents/rca-validator.md" 'qluent trees compare'
 
+# 6. /qluent:query exists and the analyst routes to the underlying CLI command.
+#    Unlike the #48 pass-throughs, the query command owns a clarification loop
+#    and long-runtime UX, so it earns a command surface of its own.
+[ -f "$ROOT/plugins/qluent/commands/query.md" ] || fail "commands/query.md should exist"
+assert_contains "$ROOT/plugins/qluent/agents/qluent-analyst.md" 'qluent query'
+
 echo "command surface tests passed"

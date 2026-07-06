@@ -62,6 +62,7 @@ assert_contains "$SKILL" '## Session paths'
 assert_contains "$SKILL" '/tmp/qluent-viz-data.json'
 assert_contains "$SKILL" '/tmp/qluent-deep-dive-bundle.json'
 assert_contains "$SKILL" '/tmp/qluent-tree-capabilities.json'
+assert_contains "$SKILL" '/tmp/qluent-query-result.json'
 
 # 2. Allowlist enforcement.
 check_path '/tmp/qluent-viz-data.json' \
@@ -73,6 +74,7 @@ check_path '/tmp/qluent-viz-data.json' \
   'plugins/qluent/scripts/render-charts.sh' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
   'tests/test_analysis_run_handles.sh' \
+  'tests/test_query_contract.sh' \
   'tests/test_renderer_contract.sh' \
   'tests/test_session_paths.sh'
 
@@ -93,6 +95,15 @@ check_path '/tmp/qluent-tree-capabilities.json' \
   'plugins/qluent/scripts/post-bash.sh' \
   'plugins/qluent/scripts/session-start.sh' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_session_paths.sh'
+
+check_path '/tmp/qluent-query-result.json' \
+  'plugins/qluent/agents/qluent-analyst.md' \
+  'plugins/qluent/commands/query.md' \
+  'plugins/qluent/commands/visualize.md' \
+  'plugins/qluent/scripts/post-bash.sh' \
+  'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_query_contract.sh' \
   'tests/test_session_paths.sh'
 
 echo "session paths tests passed"
