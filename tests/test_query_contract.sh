@@ -70,6 +70,18 @@ assert_not_contains "$QUERY_CMD" '2>&1 | tee'
 # status, so a failed CLI run looks successful and leaves an invalid saved file.
 assert_contains "$QUERY_CMD" 'set -o pipefail'
 assert_contains "$ANALYST" 'set -o pipefail'
+# Injection-safety rule: user-controlled question/answer text must pass through
+# a quoted heredoc, never be pasted directly into the command line.
+assert_contains "$QUERY_CMD" "<<'QLUENT_QUERY'"
+assert_contains "$QUERY_CMD" "<<'QLUENT_ANSWER'"
+assert_contains "$QUERY_CMD" 'qluent query "$question"'
+assert_not_contains "$QUERY_CMD" 'qluent query "<question>"'
+assert_contains "$ANALYST" "<<'QLUENT_QUERY'"
+assert_not_contains "$ANALYST" 'qluent query "<question>"'
+# Private-file rule: recreate the saved result 0600 and clobber stale files.
+assert_contains "$QUERY_CMD" 'umask 077'
+assert_contains "$QUERY_CMD" 'rm -f /tmp/qluent-query-result.json'
+assert_contains "$ANALYST" 'umask 077'
 
 # 2. The skill owns the canonical routing rule and session-path declaration.
 assert_contains "$SKILL" '## Ad-hoc query routing'

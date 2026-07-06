@@ -46,11 +46,20 @@ explicit raw-data ask), run:
 
 ```bash
 set -o pipefail
-qluent query "<question>" --json-output | tee /tmp/qluent-query-result.json
+umask 077
+question=$(command cat <<'QLUENT_QUERY'
+<question>
+QLUENT_QUERY
+)
+rm -f /tmp/qluent-query-result.json
+qluent query "$question" --json-output | tee /tmp/qluent-query-result.json
 ```
 
-(`pipefail` keeps qluent's exit status visible through the tee; without it a
-failed run looks successful and leaves an invalid saved file.)
+(The quoted heredoc keeps user-controlled question text inert instead of
+letting `$(...)`/backticks/quotes expand; `pipefail` keeps qluent's exit
+status visible through the tee; `umask 077` + `rm -f` keep the saved file
+private and clobber stale files. Same pattern for clarification answers —
+see `/qluent:query`.)
 
 Check `status`: on `clarification_needed`, present the options and re-run
 with `--thread <thread_id>` and the answer; on `ok`, present the result with
