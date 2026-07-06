@@ -66,6 +66,10 @@ assert_contains "$QUERY_CMD" 'AskUserQuestion'
 assert_contains "$QUERY_CMD" '--json-output | tee /tmp/qluent-query-result.json'
 # Clean-stdout rule: stderr must not leak into the saved JSON.
 assert_not_contains "$QUERY_CMD" '2>&1 | tee'
+# Failure-preservation rule: without pipefail the pipeline exits with tee's
+# status, so a failed CLI run looks successful and leaves an invalid saved file.
+assert_contains "$QUERY_CMD" 'set -o pipefail'
+assert_contains "$ANALYST" 'set -o pipefail'
 
 # 2. The skill owns the canonical routing rule and session-path declaration.
 assert_contains "$SKILL" '## Ad-hoc query routing'

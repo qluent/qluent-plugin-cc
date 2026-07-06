@@ -45,8 +45,12 @@ to an ad-hoc query (row/entity level, no tree coverage, SQL-shaped, or an
 explicit raw-data ask), run:
 
 ```bash
+set -o pipefail
 qluent query "<question>" --json-output | tee /tmp/qluent-query-result.json
 ```
+
+(`pipefail` keeps qluent's exit status visible through the tee; without it a
+failed run looks successful and leaves an invalid saved file.)
 
 Check `status`: on `clarification_needed`, present the options and re-run
 with `--thread <thread_id>` and the answer; on `ok`, present the result with

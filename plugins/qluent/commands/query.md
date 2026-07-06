@@ -73,8 +73,13 @@ Ad-hoc queries run a full NL->SQL->warehouse workflow and can take several minut
 Run with a long Bash timeout (600000 ms) and save the JSON for this session:
 
 ```bash
+set -o pipefail
 qluent query "<question>" --json-output | tee /tmp/qluent-query-result.json
 ```
+
+`pipefail` preserves qluent's exit status through the tee — without it a
+failed CLI run exits 0 (tee's status) and leaves an empty or invalid saved
+file that downstream steps would silently consume.
 
 If the user passed `--thread <id>` (or this is a follow-up / clarification
 answer), add `--thread <thread_id>`. Keep stderr out of the saved file:
@@ -96,6 +101,7 @@ present the clarification `message` and its `options` to the user with
 `AskUserQuestion` (the user can always answer free-text), then re-run:
 
 ```bash
+set -o pipefail
 qluent query "<the user's answer>" --thread <thread_id> --json-output | tee /tmp/qluent-query-result.json
 ```
 
