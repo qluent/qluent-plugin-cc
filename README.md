@@ -38,6 +38,7 @@ Or use slash commands directly:
 | `/qluent:deep-dive` | Cross-tree executive narrative across all configured metric trees |
 | `/qluent:investigate` | Full analysis: validation, trend, evaluation, and RCA |
 | `/qluent:visualize` | Shape the latest analysis into an `RcaReportSpec` (or local HTML fallback) |
+| `/qluent:query` | Ad-hoc natural-language data question answered via SQL (row-level, entity lookups, cuts outside the trees) |
 | `/qluent:setup` | Check installation and configuration |
 
 Start with `/qluent:investigate` for a specific metric tree. Use
@@ -66,6 +67,24 @@ running unless you pass `--yes`:
 Requires a qluent CLI release that includes `qluent trees deep-dive` from
 `qluent-cli#40`. See `/qluent:deep-dive` for the full workflow contract,
 including the synthesis shape and per-tree caveat handling.
+
+## Ad-hoc queries
+
+`/qluent:query <question>` answers data questions no metric tree covers —
+the trees answer "why did the KPI move"; `/qluent:query` answers everything
+else (row-level lookups, entity lists, arbitrary cuts and exports). It runs
+the qluent backend's natural-language-to-SQL workflow, so it can take a few
+minutes, may ask a clarifying question first, and returns the generated SQL,
+an inline result table, and a download link. Follow-ups continue the same
+conversation via the returned thread id:
+
+```bash
+/qluent:query which restaurants had the most failed deliveries last week?
+/qluent:query and how many of those were repeat customers? --thread <thread_id>
+```
+
+Requires a qluent CLI release that includes `qluent query` from
+`qluent-cli#92`.
 
 ## License
 

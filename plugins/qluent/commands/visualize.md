@@ -32,6 +32,17 @@ deep-dive or cross-tree result, use that file instead. Deep-dive bundles must be
 JSON with a bundle-level `trees[]` array; if validation fails, report the failing path
 and re-run command instead of hand-writing replacement HTML.
 
+**Ad-hoc query results:** if the source is `/tmp/qluent-query-result.json`
+(via `--file`, or the payload carries `sql` plus `data` rows from
+`qluent query`), skip the report spec entirely and go straight to
+insight-driven HTML mode via the `dashboard-design` skill: the `RcaReportSpec`
+sections are outcome/RCA-shaped and have no honest mapping for an arbitrary
+tabular result. Compose chart/table sections from the payload's `columns`,
+`data`, and answer text, and label the provenance as an ad-hoc query with its
+SQL. `--simple` is unsupported for query payloads — the generic renderer
+template is investigation-shaped and would render empty. For small results, a
+markdown table in the reply is a fine alternative to a dashboard.
+
 **Freshness check:** Read the file and verify `current_window.date_from` is recent. If the
 data looks stale (wrong tree, old dates), warn the user and suggest re-running investigate.
 If the payload includes `analysis_run_uuid`, preserve it as the saved

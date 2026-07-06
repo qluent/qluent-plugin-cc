@@ -31,6 +31,7 @@ anything.
 - **Cross-tree deep dive** — one consented executive narrative across all trees
 - **Segment drill-down** — find which segments concentrate a movement
 - **Sensitivity / lever impact** — elasticity coefficients and scenario estimates
+- **Ad-hoc data questions** — natural language to SQL for row-level, entity, or arbitrary questions no tree covers
 
 **Match suggestions to tree structure:** trees with children → RCA; trees with
 dimensions → segment drill-down; multiple trees → comparison; any tree → trend
@@ -44,6 +45,7 @@ tree for the latest period and present real findings.
 - `/qluent:investigate` — Primary entry point. Bundles validation, trend, evaluation, and RCA.
 - `/qluent:deep-dive` — Opt-in cross-tree executive read. Confirms cost.
 - `/qluent:visualize` — Render the latest analysis as an `RcaReportSpec` (primary) or styled HTML (fallback).
+- `/qluent:query` — Ad-hoc natural-language data question answered via SQL over the warehouse.
 - `/qluent:setup` — Check installation and configuration.
 
 **Start with `/qluent:investigate` for single-tree questions and
@@ -65,7 +67,8 @@ estimates, and ranked recommendations must be grounded in deterministic qluent
 JSON. Tree resolution, window reuse, provenance citation, Shapley/confidence
 interpretation, elasticity guardrails, and the segment-cut fallback rule live
 in the `qluent-interpretation` skill. Read it before driving the CLI; do not
-restate or paraphrase its rules elsewhere.
+restate or paraphrase its rules elsewhere. The tree-vs-ad-hoc-query routing
+rule also lives in that skill.
 
 ## Visualization and deep-dives
 

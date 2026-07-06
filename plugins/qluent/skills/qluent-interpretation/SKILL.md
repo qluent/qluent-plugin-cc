@@ -33,6 +33,44 @@ client-side before any quantitative call.
 Always pass an explicit `<tree_id>` to every qluent subcommand.
 Always use `--json-output`.
 
+## Ad-hoc query routing
+
+**Trees first, query as fallback — trees win ties.**
+
+Route to a metric tree (`/qluent:investigate`, `qluent-analyst` tree workflow)
+when the question is about a KPI's level, movement, trend, drivers, mix, or
+sensitivity AND it maps to a configured tree's root metric, child node, or
+declared dimension in the session catalog.
+
+Route to `qluent query` when ANY of these hold:
+
+1. **Row/entity level** — the question needs individual records or entities
+   (specific orders, customers, transactions; "list", "show me",
+   "top N <records>", "which <entities>").
+2. **No tree coverage** — the metric, dimension, or filter is not declared by
+   any tree in the catalog, and the unsupported-cut companion-tree fallback
+   cannot cover it either.
+3. **SQL-shaped ask** — the question is an arbitrary lookup, count, join, or
+   filter combination rather than a movement explanation ("how many X where
+   Y", "average Z per W last month").
+4. **Explicit raw-data ask** — the user wants a table, an export, a
+   spreadsheet, or the SQL itself.
+
+Trees win ties: if a tree can answer deterministically, use the tree. Never
+decline a data question because no tree matches — fall back to `qluent query`.
+Never use `qluent query` to re-derive numbers a tree investigation already
+returned.
+
+Ad-hoc results are produced by LLM-generated SQL, not the deterministic tree
+engine. They are not deterministic tree evidence: label their provenance as
+"ad-hoc query" (with the returned SQL as the citation), never blend them into
+Shapley attribution or other tree-derived claims, and verify the returned
+`sql` matches the user's intent before presenting numbers. Run with
+`qluent query "<question>" --json-output`, check `status`
+(`ok` / `clarification_needed` / `error`), and answer clarifications or ask
+follow-ups by re-running with `--thread <thread_id>` from the previous
+response.
+
 ## Windows
 
 Reuse the exact `current_window` and `comparison_window` from the prior
@@ -205,7 +243,7 @@ fallback styling.
 
 ## Session paths
 
-Three temp files form the rendezvous between qluent producers and consumers
+Four temp files form the rendezvous between qluent producers and consumers
 within a session. This section is the canonical declaration; every producer,
 consumer, test fixture, and the plugin-level `CLAUDE.md` surface references
 the path string verbatim. The set of files allowed to mention each path is
@@ -234,6 +272,21 @@ updating that allowlist on purpose.
   toward one cross-tree narrative.
 - **Schema:** bundle-level period/windows plus per-tree results per
   `qluent trees deep-dive --json-output`.
+
+### `/tmp/qluent-query-result.json` — latest ad-hoc query result
+- **Producer:** `/qluent:query` (and `qluent-analyst` when it falls back to
+  `qluent query`) tee the latest query JSON to this path; each clarification
+  round or follow-up overwrites it.
+- **Consumers:** `scripts/post-bash.sh` surfaces the thread id, pending
+  clarifications, and download links; `/qluent:visualize --file` reads it for
+  ad-hoc tabular charts (insight-driven HTML only — the `RcaReportSpec` and
+  `--simple` renderer paths do not apply to query payloads).
+- **Schema:** the `qluent.query.v1` contract — `status`, `answer`, `sql`,
+  `columns`, `data` (≤1000 inline rows), `row_count`, `truncated`,
+  `download_url`, `google_sheets_url`, `thread_id`, optional `clarification`
+  `{message, options}`.
+- **Freshness:** holds only the most recent round; the `thread_id` inside it
+  is the durable handle for continuing the conversation, not this file.
 
 ### `/tmp/qluent-tree-capabilities.json` — session tree catalog
 - **Producer:** `scripts/session-start.sh` writes the normalized catalog

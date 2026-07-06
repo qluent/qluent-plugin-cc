@@ -47,6 +47,7 @@ SKILL_ONLY_PHRASES=(
   'cooperative game theory'
   'Do not rerun both JSON and non-JSON'
   'Confidence scores are evidence-coverage heuristics'
+  'Trees win ties'
 )
 
 # Evidence-label list: the four-label vocabulary belongs in the skill. Callers

@@ -23,21 +23,35 @@ is_deep_dive=false
 is_trend=false
 is_rca=false
 is_compare=false
+is_query=false
 
 [[ "$command" == *"investigate"* ]] && is_investigate=true
 [[ "$command" == *"deep-dive"* ]] && is_deep_dive=true
 [[ "$command" == *"trend"* ]] && is_trend=true
 [[ "$command" == *"rca"* ]] && is_rca=true
 [[ "$command" == *"compare"* ]] && is_compare=true
+[[ "$command" == *"qluent query"* ]] && is_query=true
+
+# `qluent query "<question>"` carries free text that may contain words like
+# "trend" or "compare"; the query branch owns its own guidance, so the
+# tree-oriented flags must not fire on the question text.
+if $is_query; then
+  is_investigate=false
+  is_deep_dive=false
+  is_trend=false
+  is_rca=false
+  is_compare=false
+fi
 
 # Only act on analysis commands (not list, validate, setup, etc.)
-if ! $is_investigate && ! $is_deep_dive && ! $is_trend && ! $is_rca && ! $is_compare; then
+if ! $is_investigate && ! $is_deep_dive && ! $is_trend && ! $is_rca && ! $is_compare && ! $is_query; then
   exit 0
 fi
 
 viz_file=/tmp/qluent-viz-data.json
 deep_dive_file=/tmp/qluent-deep-dive-bundle.json
 catalog_file=/tmp/qluent-tree-capabilities.json
+query_file=/tmp/qluent-query-result.json
 
 parse_requested_dims_from_command() {
   local command_text="$1"
@@ -220,7 +234,30 @@ echo "[Qluent] Analysis complete."
 
 # Viz data reminder
 if [[ "$command" == *"--json-output"* ]]; then
-  if $is_deep_dive; then
+  if $is_query; then
+    if [ -f "$query_file" ] && "$jq_bin" -e 'type == "object"' "$query_file" >/dev/null 2>&1; then
+      query_thread=$("$jq_bin" -r '.thread_id // empty' "$query_file")
+      query_clarification=$("$jq_bin" -r '.clarification.message // empty' "$query_file")
+      query_download=$("$jq_bin" -r '.download_url // empty' "$query_file")
+      query_sheets=$("$jq_bin" -r '.google_sheets_url // empty' "$query_file")
+      if [ -n "$query_clarification" ]; then
+        echo "  → The query needs clarification. Present the options to the user, then re-run qluent query with --thread ${query_thread:-<thread_id>} and the chosen answer."
+      else
+        if [ -n "$query_thread" ]; then
+          echo "  → Query thread: ${query_thread} — pass --thread ${query_thread} to qluent query for follow-up questions on this result."
+        fi
+        if [ -n "$query_download" ]; then
+          echo "  → Full results: ${query_download}"
+        fi
+        if [ -n "$query_sheets" ]; then
+          echo "  → Google Sheet: ${query_sheets}"
+        fi
+        echo "  → For charts over this result, use /qluent:visualize --file /tmp/qluent-query-result.json (insight-driven HTML)."
+      fi
+    else
+      echo "  → To keep the result available for follow-ups and visualization, pipe output through: | tee /tmp/qluent-query-result.json"
+    fi
+  elif $is_deep_dive; then
     if [ -f "$deep_dive_file" ]; then
       echo "  → Deep-dive bundle saved. Synthesize one cross-tree narrative; do not split it into separate tree reports."
       print_analysis_run_references "$deep_dive_file"
@@ -235,7 +272,7 @@ if [[ "$command" == *"--json-output"* ]]; then
   fi
 fi
 
-if [[ "$command" == *"--json-output"* ]] && ! $is_deep_dive; then
+if [[ "$command" == *"--json-output"* ]] && ! $is_deep_dive && ! $is_query; then
   build_fallback_guidance "$command" "$viz_file" "$catalog_file"
 fi
 
