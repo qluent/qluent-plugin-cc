@@ -1,6 +1,19 @@
 {
-  "description": "Qluent hooks — session context injection and post-command guidance.",
+  "description": "Qluent hooks — session context injection, auto-approval of qluent CLI commands, and post-command guidance.",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(qluent *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-bash.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
