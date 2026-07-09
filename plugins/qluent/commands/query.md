@@ -1,19 +1,25 @@
 ---
-description: Ask an ad-hoc natural-language data question answered via SQL over the warehouse (row-level, entity lookups, cuts outside the metric trees)
+description: Ask an ad-hoc data question — answered by a deterministic composed QueryPlan when the query catalog covers it, else via LLM-generated SQL over the warehouse (row-level, entity lookups, cuts outside the metric trees)
 argument-hint: "<question> [--thread <id>]"
-allowed-tools: Bash(which qluent), Bash(qluent *), Bash(jq *), AskUserQuestion, Read
+allowed-tools: Bash(which qluent), Bash(qluent *), Bash(jq *), AskUserQuestion, Read, Write
 ---
 
-# Ad-hoc natural-language query
+# Ad-hoc query (composed plan first, NL fallback)
 
 Use when the user asks a data question the metric trees cannot answer:
 row-level or entity lookups, arbitrary aggregations or filters, or explicit
-raw-data requests. The question is answered by the qluent backend's LLM query
-workflow (natural language -> generated SQL -> warehouse execution), so the
-result is not deterministic tree evidence — follow the `qluent-interpretation`
-skill's ad-hoc query routing and provenance rules throughout.
+raw-data requests. Two engines answer these, tried in order:
 
-## Step 0: Load the canonical interpretation protocol
+1. **Composed plan** (`qluent plan`) — you author a typed QueryPlan against
+   the project's query catalog; the backend compiles it deterministically.
+   Preferred whenever the catalog covers the question.
+2. **NL query** (`qluent query`) — the backend's LLM workflow (natural
+   language -> generated SQL -> execution); non-deterministic. The fallback.
+
+Follow the `qluent-interpretation` skill's routing and provenance rules
+throughout.
+
+## Step 0: Load the canonical protocols
 
 Before anything else, `Read` the canonical interpretation module:
 
@@ -21,8 +27,13 @@ Before anything else, `Read` the canonical interpretation module:
 ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
 ```
 
-Its "Ad-hoc query routing" section owns the tree-vs-query decision rule and
-the provenance rules for presenting query results.
+Its "Ad-hoc query routing" section owns the tree-vs-plan-vs-query decision
+rule and the provenance rules for presenting results. If the composed-plan
+path is available (Step 1), also `Read` the plan-authoring protocol:
+
+```
+${CLAUDE_PLUGIN_ROOT}/skills/compose-authoring/SKILL.md
+```
 
 ## Step 1: Check CLI availability and capability
 
@@ -54,6 +65,15 @@ that includes the query command (qluent-cli#92), then retry `/qluent:query`.
 
 Do not fall back to guessing tree commands or writing SQL yourself.
 
+Also probe the composed-plan capability (newer CLI + backend):
+
+```bash
+qluent plan --help
+```
+
+Non-zero / unknown subcommand simply means the compose path is unavailable —
+skip Step 3 and answer via the NL query. Never stop for this.
+
 ## Step 2: Routing check
 
 Apply the skill's ad-hoc query routing rule to `$ARGUMENTS` (minus any
@@ -62,7 +82,46 @@ Apply the skill's ad-hoc query routing rule to `$ARGUMENTS` (minus any
 catalog, redirect to `/qluent:investigate` instead of running an ad-hoc query,
 and say why in one sentence.
 
-## Step 3: Run the query
+## Step 3: Try a composed plan first
+
+Skip this step when the compose capability probe failed, or when this is a
+follow-up on an existing NL-query thread (`--thread <id>` given).
+
+Fetch the query catalog once per session (reuse `/tmp/qluent-catalog.json` if
+it already exists):
+
+```bash
+umask 077
+[ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
+jq '{bases: (.catalog.bases | map_values({columns})), metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions}' /tmp/qluent-catalog.json
+```
+
+If the catalog command reports the project has no query catalog, fall through
+to Step 4.
+
+Decide coverage: the question's relations, metrics, dimensions and filters
+must all map to catalog vocabulary (aliases count). If anything essential is
+missing, fall through to Step 4 and say which vocabulary was missing.
+
+Otherwise author the plan per the `compose-authoring` skill, `Write` it to
+`/tmp/qluent-plan.json`, and run:
+
+```bash
+set -o pipefail
+umask 077
+rm -f /tmp/qluent-plan-result.json
+qluent plan --file /tmp/qluent-plan.json --json-output | tee /tmp/qluent-plan-result.json >/dev/null
+jq '{status, error_code, error, row_count, grain}' /tmp/qluent-plan-result.json
+```
+
+- `status: "ok"` — present per Step 6 (composed-plan variant). Done; skip
+  Steps 4-5.
+- `status: "plan_invalid"` — the `error` is a repair instruction: fix the plan
+  per the skill and re-run, at most 3 repair rounds. If the errors show the
+  catalog genuinely lacks the vocabulary, fall through to Step 4 and say so.
+- Anything else (hard error) — fall through to Step 4.
+
+## Step 4: Run the NL query
 
 Warn the user once before the first run:
 
@@ -109,7 +168,7 @@ If qluent exits non-zero:
 - If the stream was interrupted, suggest re-running the same command.
 - Do not synthesize an answer from partial shell text.
 
-## Step 4: Clarification loop
+## Step 5: Clarification loop (NL query only)
 
 Check the saved payload's `status` with `jq`. If it is `clarification_needed`,
 present the clarification `message` and its `options` to the user with
@@ -126,46 +185,64 @@ rm -f /tmp/qluent-query-result.json
 qluent query "$answer" --thread <thread_id> --json-output | tee /tmp/qluent-query-result.json
 ```
 
-(The answer text is user-controlled too — same quoted-heredoc rule as Step 3.
+(The answer text is user-controlled too — same quoted-heredoc rule as Step 4.
 The `<thread_id>` comes from the previous qluent response, so plain
 substitution is fine there.)
 
 Cap the loop at 3 rounds; after that, report the open ambiguity to the user
 instead of looping further.
 
-## Step 5: Present the result
+## Step 6: Present the result
 
 Extract fields from the saved file with `jq` rather than dumping the full
-payload (it can hold up to 1000 rows) into the conversation:
+payload (it can hold up to 1000 rows) into the conversation.
+
+For an NL-query result:
 
 ```bash
 jq '{status, answer, sql, columns, row_count, truncated, thread_id, download_url, google_sheets_url}' /tmp/qluent-query-result.json
 jq '.data[:20]' /tmp/qluent-query-result.json
 ```
 
+For a composed-plan result:
+
+```bash
+jq '{status, sql, columns, row_count, grain, metrics, plan_summary}' /tmp/qluent-plan-result.json
+jq '.data[:20]' /tmp/qluent-plan-result.json
+```
+
 The payload shape may evolve with the CLI, so inspect fields by meaning rather
 than hardcoding one exact schema. Compose the reply:
 
-- Lead with the `answer`.
+- Lead with the direct answer to the question (NL results carry an `answer`;
+  for plan results state it from the rows yourself).
 - Render a compact markdown table of the first ~20 rows, noting
   "showing N of M rows" when `truncated` or `row_count` exceeds what you show.
-- Show the returned `sql` in a code block and check it matches the user's
-  intent before presenting numbers; flag mismatches instead of papering over
-  them.
-- Always surface `Query thread: <thread_id>` plus the `download_url` /
-  `google_sheets_url` links when present.
-- Label provenance per the skill: these numbers come from an ad-hoc query
-  (the SQL above), not from a deterministic tree investigation.
+- Show the returned `sql` in a code block. For NL results, check it matches
+  the user's intent before presenting numbers; flag mismatches instead of
+  papering over them. (A plan result's SQL is compiled from your plan — no
+  intent check needed, but show it for transparency.)
+- NL results: always surface `Query thread: <thread_id>` plus the
+  `download_url` / `google_sheets_url` links when present.
+- Plan results: respect `grain` and `metrics[*].summable` before doing any
+  arithmetic across results (see the `compose-authoring` skill).
+- Label provenance per the skill: "composed query (deterministic)" for plan
+  results, "ad-hoc query" for NL results — neither is deterministic tree
+  evidence.
 
 ## Rules
 
-- Check for qluent and the `query` subcommand before running.
+- Check for qluent and the `query` subcommand before running; probe `plan`
+  and prefer it when the catalog covers the question.
 - Follow the `qluent-interpretation` skill for routing, provenance labeling,
-  and the boundary between ad-hoc results and tree-derived attribution.
-- Follow-ups on the same result reuse `--thread <thread_id>`.
+  and the boundary between ad-hoc results and tree-derived attribution; the
+  `compose-authoring` skill owns plan authoring and repair.
+- Follow-ups on an NL result reuse `--thread <thread_id>`; follow-ups on a
+  plan result modify the plan document and re-run `qluent plan`.
 - For charts over the result, offer
-  `/qluent:visualize --file /tmp/qluent-query-result.json`
+  `/qluent:visualize --file /tmp/qluent-query-result.json` (or
+  `--file /tmp/qluent-plan-result.json`)
   (insight-driven HTML; the `--simple` renderer does not support query
   payloads).
-- Never write or edit SQL yourself; the backend owns SQL generation. Re-ask
-  through `qluent query` instead.
+- Never write or edit SQL yourself; the backend owns SQL generation. Author
+  plans, or re-ask through `qluent query`.

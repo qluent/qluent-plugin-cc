@@ -31,7 +31,7 @@ anything.
 - **Cross-tree deep dive** — one consented executive narrative across all trees
 - **Segment drill-down** — find which segments concentrate a movement
 - **Sensitivity / lever impact** — elasticity coefficients and scenario estimates
-- **Ad-hoc data questions** — natural language to SQL for row-level, entity, or arbitrary questions no tree covers
+- **Ad-hoc data questions** — composed QueryPlans (deterministic, catalog-checked) for aggregations and cuts the query catalog covers, falling back to natural-language-to-SQL for row-level, entity, or arbitrary questions neither trees nor the catalog cover
 
 **Match suggestions to tree structure:** trees with children → RCA; trees with
 dimensions → segment drill-down; multiple trees → comparison; any tree → trend
