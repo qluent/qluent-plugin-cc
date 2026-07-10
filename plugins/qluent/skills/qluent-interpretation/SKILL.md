@@ -301,9 +301,10 @@ updating that allowlist on purpose.
   is the durable handle for continuing the conversation, not this file.
 
 ### `/tmp/qluent-catalog.json` — session query catalog
-- **Producer:** the first `qluent catalog --json-output` of the session
-  (written by `/qluent:query` or any agent following the `compose-authoring`
-  skill).
+- **Producer:** `scripts/session-start.sh` writes it at session start when the
+  CLI/backend support composed plans; otherwise the first
+  `qluent catalog --json-output` of the session (written by `/qluent:query` or
+  any agent following the `compose-authoring` skill).
 - **Consumers:** plan authoring reads the vocabulary (`catalog.*`) and the
   QueryPlan JSON schema (`plan_schema`) from it instead of re-fetching.
 - **Schema:** the `qluent.catalog.v1` contract — `catalog` (bases, metrics,

@@ -86,7 +86,7 @@ print()
 print('Unsupported cuts: the post-bash hook surfaces the closest companion tree per the algorithm in the qluent-interpretation skill. Follow its suggestion and synthesize both views.')
 print()
 print('Business-language routing hints: revenue/sales/GMV/AOV -> revenue; growth/users/acquisition/reactivation -> growth; delivery/late/failed/courier/ops quality -> operations; conversion/checkout/cart/traffic/payment -> conversion_funnel.')
-print('No tree match? Ad-hoc, row-level, entity-lookup, or SQL-shaped questions route to qluent query (slash command /qluent:query) per the qluent-interpretation skill. KPI movement/RCA questions stay on the trees above.')
+print('No tree match? Ad-hoc, row-level, entity-lookup, or SQL-shaped questions route per the qluent-interpretation skill (slash command /qluent:query): a composed plan first when the query catalog covers the question, else qluent query. KPI movement/RCA questions stay on the trees above.')
 print('On first run, orient the user from this tree metadata and offer one concrete first command. Use qluent whoami/status/suggestions only when available; do not probe unsupported project/status commands.')
 print('After an investigation, offer an RCA report, mix-shift report, or elasticity report through /qluent:visualize before any local HTML fallback.')
 print()
@@ -95,4 +95,39 @@ print('Ask a business performance question or use /qluent:investigate to start, 
 
 if [ -n "$context" ]; then
   echo "$context"
+fi
+
+# Composed-plan capability probe (newer CLI + backend). Runs even when no
+# metric trees exist -- a catalog-only project still gets the plan path. Fails
+# silently on CLIs without `qluent plan`; a loadable catalog is cached at the
+# session path the compose-authoring skill expects, so later plan authoring
+# skips the re-fetch.
+compose_context=""
+if qluent plan --help &>/dev/null; then
+  catalog_err=$(mktemp)
+  if catalog_json=$(qluent catalog --json-output 2>"$catalog_err"); then
+    (umask 077; printf '%s' "$catalog_json" > /tmp/qluent-catalog.json)
+    compose_context=$(printf '%s' "$catalog_json" | "$python_bin" -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    catalog = data.get('catalog') or {}
+    bases = catalog.get('bases') or {}
+    metrics = catalog.get('metrics') or {}
+except Exception:
+    sys.exit(0)
+if not bases:
+    sys.exit(0)
+print(f'[Qluent] Query catalog available: {len(bases)} bases, {len(metrics)} metrics (cached at /tmp/qluent-catalog.json).')
+print('For ad-hoc aggregations, breakdowns and rankings the catalog covers, prefer a composed plan (qluent plan; protocol in the compose-authoring skill) over the NL qluent query -- deterministic and catalog-checked.')
+" 2>/dev/null) || compose_context=""
+  elif grep -q 'QUERY_CATALOG_INVALID' "$catalog_err" 2>/dev/null; then
+    compose_context='[Qluent] This project has a query_catalog that fails to load (fix it under the Model tab) -- composed plans are unavailable until then; ad-hoc questions fall back to qluent query.'
+  fi
+  rm -f "$catalog_err"
+fi
+
+if [ -n "$compose_context" ]; then
+  echo ""
+  echo "$compose_context"
 fi
