@@ -77,4 +77,10 @@ assert_contains "$ROOT/plugins/qluent/agents/rca-validator.md" 'qluent trees com
 [ -f "$ROOT/plugins/qluent/commands/query.md" ] || fail "commands/query.md should exist"
 assert_contains "$ROOT/plugins/qluent/agents/qluent-analyst.md" 'qluent query'
 
+# 7. /qluent:setup follows the actual qluent.status.v1 payload. The CLI
+# exposes metric trees as a top-level array, not a nested capabilities object.
+SETUP="$ROOT/plugins/qluent/commands/setup.md"
+assert_contains "$SETUP" 'top-level `trees` array'
+assert_not_contains "$SETUP" 'capabilities.metric_trees.count'
+
 echo "command surface tests passed"

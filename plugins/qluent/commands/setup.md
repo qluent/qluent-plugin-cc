@@ -59,13 +59,15 @@ catalog-derived query suggestions and explain that `/qluent:query` will use
 a deterministic composed plan when the catalog fully covers the question,
 then fall back to the NL-to-SQL workflow when needed.
 
-Metric trees are an advanced, optional capability:
+Metric trees are an advanced, optional capability. Read their availability
+from the top-level `trees` array in the Step 2 status response:
 
-- If `capabilities.metric_trees.count` is zero, say metric-tree
+- If `trees` is empty, say metric-tree
   investigation is not configured for this project. This is informational,
   not a setup warning or failure.
-- If trees exist, briefly mention that `/qluent:investigate` is available
-  for deterministic KPI decomposition, RCA, trends, and levers.
+- If `trees` contains entries, briefly mention that
+  `/qluent:investigate` is available for deterministic KPI decomposition,
+  RCA, trends, and levers.
 
 If suggestions fail with an auth error, tell the user to re-authenticate with
 `!qluent login`. If the project has no loadable query catalog, explain that
