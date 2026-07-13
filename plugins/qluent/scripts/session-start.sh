@@ -113,11 +113,14 @@ fi
 # silently on CLIs without `qluent plan`; a loadable catalog is cached at the
 # session path the compose-authoring skill expects, so later plan authoring
 # skips the re-fetch.
+compose_catalog=/tmp/qluent-catalog.json
 compose_context=""
+# The fixed path outlives a Claude session; never reuse another project's catalog.
+rm -f "$compose_catalog"
 if qluent plan --help &>/dev/null; then
   catalog_err=$(mktemp)
   if catalog_json=$(qluent catalog --json-output 2>"$catalog_err"); then
-    (umask 077; printf '%s' "$catalog_json" > /tmp/qluent-catalog.json)
+    (umask 077; printf '%s' "$catalog_json" > "$compose_catalog")
     compose_context=$(printf '%s' "$catalog_json" | "$python_bin" -c "
 import sys, json
 try:

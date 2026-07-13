@@ -32,14 +32,22 @@ deep-dive or cross-tree result, use that file instead. Deep-dive bundles must be
 JSON with a bundle-level `trees[]` array; if validation fails, report the failing path
 and re-run command instead of hand-writing replacement HTML.
 
-**Ad-hoc query results:** if the source is `/tmp/qluent-query-result.json`
-(via `--file`, or the payload carries `sql` plus `data` rows from
-`qluent query`), skip the report spec entirely and go straight to
+**Tabular query results:** if the source is `/tmp/qluent-query-result.json`
+or `/tmp/qluent-plan-result.json` (via `--file`), or the payload carries
+`sql` plus `data` rows from either query engine, skip the report spec
+entirely and go straight to
 insight-driven HTML mode via the `dashboard-design` skill: the `RcaReportSpec`
 sections are outcome/RCA-shaped and have no honest mapping for an arbitrary
-tabular result. Compose chart/table sections from the payload's `columns`,
-`data`, and answer text, and label the provenance as an ad-hoc query with its
-SQL. `--simple` is unsupported for query payloads — the generic renderer
+tabular result. Compose chart/table sections from the payload's `columns` and
+`data`, plus `answer` for an NL result or `plan_summary` for a plan result.
+Preserve the engine-specific provenance:
+
+- `qluent.query.v1`: label it "ad-hoc query" and cite its SQL.
+- `qluent.plan.v1`: label it "composed query (deterministic)", cite its SQL,
+  and preserve `grain` and `metrics[*].summable` constraints in any
+  cross-result arithmetic.
+
+`--simple` is unsupported for query payloads — the generic renderer
 template is investigation-shaped and would render empty. For small results, a
 markdown table in the reply is a fine alternative to a dashboard.
 

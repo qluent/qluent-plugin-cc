@@ -44,22 +44,34 @@ questions use the query workflow. Only explicit deterministic KPI movement,
 RCA, trend, mix, or lever requests with a matching configured tree proceed to
 Step 1.
 
-For the default query workflow, probe `qluent plan --help`. When available,
-load `qluent catalog --json-output` and follow the `compose-authoring`
-skill. If the catalog fully covers the question, author
-`/tmp/qluent-plan.json` and run:
+For the default query workflow, probe `qluent plan --help`. When supported,
+reuse `/tmp/qluent-catalog.json` if present or fetch it with:
+
+```bash
+umask 077
+[ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
+```
+
+Follow the `compose-authoring` skill. If the catalog covers every required
+base, metric, dimension, and filter, author `/tmp/qluent-plan.json` with a
+quoted heredoc, then run:
 
 ```bash
 set -o pipefail
 umask 077
 rm -f /tmp/qluent-plan-result.json
-qluent plan --file /tmp/qluent-plan.json --json-output | tee /tmp/qluent-plan-result.json
+qluent plan --file /tmp/qluent-plan.json --json-output | tee /tmp/qluent-plan-result.json >/dev/null
 ```
 
-Repair `plan_invalid` responses per the skill. On success, present the
-result as a **composed query (deterministic)** and stop. If the compose
-capability is unavailable or catalog vocabulary is insufficient, use the NL
-fallback:
+Inspect `status`. On `plan_invalid`, repair the plan from the returned
+instruction and retry at most three rounds. On `ok`, answer from the rows,
+show the compiled SQL, respect `grain` and `metrics[*].summable`, label the
+provenance **composed query (deterministic)**, then stop.
+
+Fall back to the NL path only when `qluent plan --help` is unavailable, the
+catalog lacks essential vocabulary, the node algebra cannot express the
+question, or plan execution returns a hard error. Say which vocabulary or
+capability forced the fallback. Run:
 
 ```bash
 set -o pipefail
@@ -81,8 +93,8 @@ see `/qluent:query`.)
 Check `status`: on `clarification_needed`, present the options and re-run
 with `--thread <thread_id>` and the answer; on `ok`, present the result with
 its SQL and label the provenance as an ad-hoc query per the skill, then stop —
-the tree workflow below does not apply. When a tree fits, proceed with
-Step 1 unchanged.
+the tree workflow below does not apply. When the explicit advanced tree route
+applies, proceed with Step 1 unchanged.
 
 ### Step 1: Pick a tree, then investigate
 

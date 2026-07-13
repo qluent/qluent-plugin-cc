@@ -100,12 +100,15 @@ assert_contains "$SESSION_START" '/qluent:query'
 # 4. Docs advertise the command; visualize declares the renderer boundary.
 assert_contains "$README" '/qluent:query'
 assert_contains "$PLUGIN_CLAUDE" '/qluent:query'
+assert_contains "$VISUALIZE" '/tmp/qluent-plan-result.json'
+assert_contains "$VISUALIZE" 'composed query (deterministic)'
 assert_contains "$VISUALIZE" '`--simple` is unsupported for query payloads'
 
 # 5. Hook behavior against fixture payloads.
 tmpdir="$(mktemp -d)"
 query_file="/tmp/qluent-query-result.json"
 viz_file="/tmp/qluent-viz-data.json"
+catalog_file="/tmp/qluent-catalog.json"
 
 restore_tmp_files() {
   rm -f "$query_file" "$viz_file"
@@ -114,6 +117,11 @@ restore_tmp_files() {
   fi
   if [ -f "$tmpdir/viz-data.bak" ]; then
     cp "$tmpdir/viz-data.bak" "$viz_file"
+  fi
+  if [ -f "$tmpdir/catalog.bak" ]; then
+    cp "$tmpdir/catalog.bak" "$catalog_file"
+  else
+    rm -f "$catalog_file"
   fi
   rm -rf "$tmpdir"
 }
@@ -124,7 +132,32 @@ fi
 if [ -f "$viz_file" ]; then
   cp "$viz_file" "$tmpdir/viz-data.bak"
 fi
+if [ -f "$catalog_file" ]; then
+  cp "$catalog_file" "$tmpdir/catalog.bak"
+fi
 trap restore_tmp_files EXIT
+
+# 5a. A failed catalog probe must invalidate a cache from an earlier project.
+mkdir -p "$tmpdir/bin"
+cat > "$tmpdir/bin/qluent" <<'SH'
+#!/usr/bin/env bash
+if [ "$1 $2 $3" = "trees list --json-output" ]; then
+  printf '{"trees":[]}'
+  exit 0
+fi
+if [ "$1 $2" = "plan --help" ]; then
+  exit 0
+fi
+if [ "$1 $2" = "catalog --json-output" ]; then
+  echo 'QUERY_CATALOG_INVALID' >&2
+  exit 1
+fi
+exit 1
+SH
+chmod +x "$tmpdir/bin/qluent"
+printf '{"catalog":{"bases":{"stale_project":{}}}}' > "$catalog_file"
+PATH="$tmpdir/bin:$PATH" bash "$SESSION_START" >/dev/null
+[ ! -e "$catalog_file" ] || fail "session start should remove a stale catalog when the current project catalog fails"
 
 QUERY_TOOL_INPUT='{"command":"qluent query \"top customers by refunds\" --json-output | tee /tmp/qluent-query-result.json"}'
 
