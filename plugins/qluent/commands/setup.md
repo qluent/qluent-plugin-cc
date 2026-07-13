@@ -34,50 +34,60 @@ which qluent
 
 If installation fails or the user skips, stop here and report that qluent is not installed.
 
-## Step 2: Check configuration
+## Step 2: Check the effective connection and capabilities
 
 ```bash
-qluent config
+qluent status --json-output
 ```
 
-If the output shows an API key and project UUID, configuration is present.
+Use this result rather than `qluent config`: status reflects environment
+overrides as well as the saved config and verifies API access.
 
-If no config file is found or credentials are missing:
+If `connected` is false or the command reports missing credentials:
 - Tell the user to log in by running `!qluent login` in this session. This opens a browser for SSO authentication and automatically configures the API key, project, and email.
 - **Always recommend `qluent login` first** — it is the preferred auth method. Only mention `qluent setup` as a fallback for headless environments without a browser.
 - Do not attempt to run `qluent login` or `qluent setup` via Bash — these are interactive commands that require the `!` prefix.
 
-## Step 3: Verify access
+## Step 3: Start with query discovery
 
 ```bash
-qluent trees list
+qluent suggestions --json-output
 ```
 
-If trees are returned, qluent is fully ready. Report the number of available metric trees.
+Querying is the default Qluent workflow. Present the first 2–3
+catalog-derived query suggestions and explain that `/qluent:query` will use
+a deterministic composed plan when the catalog fully covers the question,
+then fall back to the NL-to-SQL workflow when needed.
 
-If the command fails with an auth error, the credentials may be invalid or expired. Tell the user to re-authenticate with `!qluent login`.
+Metric trees are an advanced, optional capability:
 
-If no trees are found, tell the user their workspace may not have any metric trees configured yet.
+- If `capabilities.metric_trees.count` is zero, say metric-tree
+  investigation is not configured for this project. This is informational,
+  not a setup warning or failure.
+- If trees exist, briefly mention that `/qluent:investigate` is available
+  for deterministic KPI decomposition, RCA, trends, and levers.
 
-## Step 4: Kick off exploration
+If suggestions fail with an auth error, tell the user to re-authenticate with
+`!qluent login`. If the project has no loadable query catalog, explain that
+questions can still fall back to `qluent query`.
 
-If Step 3 succeeded and trees are available, run the session-start hook to inject rich tree context:
+## Step 4: Inject project context
+
+For every connected project, run the session-start hook. Catalog-only
+projects need its query context just as much as tree-enabled projects:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh"
 ```
 
-Then proactively suggest an initial investigation based on the available trees. For example:
-- If there's a revenue tree, offer to investigate recent revenue performance
-- If there are multiple trees, highlight what each one can answer
-- Tailor suggestions to the tree structure (dimensions → segment drill-down, children → root cause)
-
-The goal is to get the user into analysis immediately after setup, not leave them staring at a status summary.
+Then offer one concrete `/qluent:query` question from the suggestions. Do not
+make users configure a metric tree before they can start querying.
 
 ## Output
 
 Present a summary:
 - Installation: installed / not installed
-- Authentication: configured / not configured
-- Metric trees: N available (with descriptions and what each can answer)
-- Suggested first question based on available trees
+- Connection: ready / login required
+- Querying: ready (default), including catalog coverage when available
+- Metric trees: N available, or "not configured (advanced, optional)"
+- Suggested first query based on the project catalog

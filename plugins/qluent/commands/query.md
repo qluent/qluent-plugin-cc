@@ -1,14 +1,14 @@
 ---
-description: Ask an ad-hoc data question — answered by a deterministic composed QueryPlan when the query catalog covers it, else via LLM-generated SQL over the warehouse (row-level, entity lookups, cuts outside the metric trees)
+description: Ask a business or data question — the default Qluent workflow, answered by a deterministic composed QueryPlan when the catalog covers it, else via LLM-generated SQL
 argument-hint: "<question> [--thread <id>]"
 allowed-tools: Bash(which qluent), Bash(qluent *), Bash(jq *), AskUserQuestion, Read, Write
 ---
 
-# Ad-hoc query (composed plan first, NL fallback)
+# Query (default workflow; composed plan first, NL fallback)
 
-Use when the user asks a data question the metric trees cannot answer:
-row-level or entity lookups, arbitrary aggregations or filters, or explicit
-raw-data requests. Two engines answer these, tried in order:
+Use for general business and data questions, including aggregations,
+breakdowns, rankings, row-level or entity lookups, arbitrary filters, and
+explicit raw-data requests. Two engines answer these, tried in order:
 
 1. **Composed plan** (`qluent plan`) — you author a typed QueryPlan against
    the project's query catalog; the backend compiles it deterministically.
@@ -27,7 +27,7 @@ Before anything else, `Read` the canonical interpretation module:
 ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
 ```
 
-Its "Ad-hoc query routing" section owns the tree-vs-plan-vs-query decision
+Its "Query-first routing" section owns the tree-vs-plan-vs-query decision
 rule and the provenance rules for presenting results. If the composed-plan
 path is available (Step 1), also `Read` the plan-authoring protocol:
 
@@ -76,11 +76,12 @@ skip Step 3 and answer via the NL query. Never stop for this.
 
 ## Step 2: Routing check
 
-Apply the skill's ad-hoc query routing rule to `$ARGUMENTS` (minus any
-`--thread <id>` flag). If the question is actually a KPI movement /
-"why did X change" question that maps to a configured tree in the session
-catalog, redirect to `/qluent:investigate` instead of running an ad-hoc query,
-and say why in one sentence.
+Apply the skill's query-first routing rule to `$ARGUMENTS` (minus any
+`--thread <id>` flag). Only redirect when the user explicitly asks for
+advanced deterministic KPI movement analysis (for example RCA, drivers,
+trend classification, or levers) and the session catalog contains a matching
+tree. General questions about a metric's value, breakdown, ranking, or change
+remain on the query workflow.
 
 ## Step 3: Try a composed plan first
 

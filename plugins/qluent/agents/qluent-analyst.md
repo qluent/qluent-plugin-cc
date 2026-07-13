@@ -1,6 +1,6 @@
 ---
 name: qluent-analyst
-description: Proactively use when the user asks about business metrics, KPI movements, revenue/cost/ROAS/conversion changes, or why a metric went up or down — or ad-hoc data questions (row-level lookups, entity lists, arbitrary cuts) which it answers via `qluent query` when no metric tree fits. Autonomously runs the full investigation workflow — investigate, then follow up with trend, RCA, or tree comparison as needed until the question is fully answered.
+description: Proactively answer business and data questions through the query workflow by default, using advanced metric-tree investigation for explicit deterministic KPI movement, RCA, trend, or lever requests.
 tools: Bash
 skills:
   - qluent-interpretation
@@ -22,15 +22,13 @@ restate or paraphrase its rules.
 
 ## Proactive guidance
 
-When the question is vague or exploratory, run a lightweight analysis and
+When the question is vague or exploratory, start with query discovery and
 show what's possible.
 
-1. Check session context for available trees; if absent, run
-   `qluent trees list --json-output`.
-2. Pick the broadest-scope tree and investigate the most recent period.
-3. Summarize findings and suggest 2-3 follow-up questions tailored to the
-   data.
-4. Mention other available trees briefly.
+1. Run `qluent suggestions --json-output` and use the query suggestions first.
+2. Ask or answer one lightweight catalog-backed question.
+3. Suggest 2-3 follow-up questions tailored to the returned data.
+4. Mention metric trees only as an advanced option when configured.
 
 ## Workflow
 
@@ -39,22 +37,24 @@ rules in the `qluent-interpretation` skill first. Continue from a matching
 cached or fetched saved run when available instead of starting by rerunning the
 investigation.
 
-### Step 0: Route tree vs composed plan vs NL query
+### Step 0: Route query vs advanced metric-tree analysis
 
-Apply the skill's ad-hoc query routing rule first. When the question routes
-away from trees (row/entity level, no tree coverage, SQL-shaped, or an explicit
-raw-data ask), prefer the composed-plan path from the `compose-authoring` skill.
+Apply the skill's query-first routing rule. General business and data
+questions use the query workflow. Only explicit deterministic KPI movement,
+RCA, trend, mix, or lever requests with a matching configured tree proceed to
+Step 1.
 
-Probe `qluent plan --help`. When supported, reuse
-`/tmp/qluent-catalog.json` if present or fetch it with:
+For the default query workflow, probe `qluent plan --help`. When supported,
+reuse `/tmp/qluent-catalog.json` if present or fetch it with:
 
 ```bash
 umask 077
 [ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
 ```
 
-If the catalog covers every required base, metric, dimension and filter,
-author `/tmp/qluent-plan.json` with a quoted heredoc, then run:
+Follow the `compose-authoring` skill. If the catalog covers every required
+base, metric, dimension, and filter, author `/tmp/qluent-plan.json` with a
+quoted heredoc, then run:
 
 ```bash
 set -o pipefail
@@ -66,8 +66,7 @@ qluent plan --file /tmp/qluent-plan.json --json-output | tee /tmp/qluent-plan-re
 Inspect `status`. On `plan_invalid`, repair the plan from the returned
 instruction and retry at most three rounds. On `ok`, answer from the rows,
 show the compiled SQL, respect `grain` and `metrics[*].summable`, label the
-provenance "composed query (deterministic)", then stop — the tree workflow
-below does not apply.
+provenance **composed query (deterministic)**, then stop.
 
 Fall back to the NL path only when `qluent plan --help` is unavailable, the
 catalog lacks essential vocabulary, the node algebra cannot express the
@@ -94,8 +93,8 @@ see `/qluent:query`.)
 Check `status`: on `clarification_needed`, present the options and re-run
 with `--thread <thread_id>` and the answer; on `ok`, present the result with
 its SQL and label the provenance as an ad-hoc query per the skill, then stop —
-the tree workflow below does not apply. When a tree fits, proceed with
-Step 1 unchanged.
+the tree workflow below does not apply. When the explicit advanced tree route
+applies, proceed with Step 1 unchanged.
 
 ### Step 1: Pick a tree, then investigate
 

@@ -84,8 +84,8 @@ assert_contains "$QUERY_CMD" 'rm -f /tmp/qluent-query-result.json'
 assert_contains "$ANALYST" 'umask 077'
 
 # 2. The skill owns the canonical routing rule and session-path declaration.
-assert_contains "$SKILL" '## Ad-hoc query routing'
-assert_contains "$SKILL" 'Trees win ties'
+assert_contains "$SKILL" '## Query-first routing'
+assert_contains "$SKILL" 'Query is the default workflow'
 assert_contains "$SKILL" '/tmp/qluent-query-result.json'
 
 # 3. Routing consumers point at the query path.
