@@ -41,6 +41,16 @@ except Exception:
     sys.exit(0)
 
 if not raw:
+    catalog_path = os.environ.get('QLUENT_TREE_CATALOG')
+    if catalog_path:
+        try:
+            with open(catalog_path, 'w', encoding='utf-8') as fh:
+                json.dump({'trees': []}, fh)
+        except Exception:
+            pass
+    print('[Qluent] Querying is ready and is the default workflow for this project.')
+    print('[Qluent] Metric trees are not configured (advanced, optional); deterministic KPI investigation is unavailable until a tree is published.')
+    print('Start with /qluent:query and a business or data question.')
     sys.exit(0)
 
 def norm(t):
@@ -86,11 +96,12 @@ print()
 print('Unsupported cuts: the post-bash hook surfaces the closest companion tree per the algorithm in the qluent-interpretation skill. Follow its suggestion and synthesize both views.')
 print()
 print('Business-language routing hints: revenue/sales/GMV/AOV -> revenue; growth/users/acquisition/reactivation -> growth; delivery/late/failed/courier/ops quality -> operations; conversion/checkout/cart/traffic/payment -> conversion_funnel.')
-print('No tree match? Ad-hoc, row-level, entity-lookup, or SQL-shaped questions route per the qluent-interpretation skill (slash command /qluent:query): a composed plan first when the query catalog covers the question, else qluent query. KPI movement/RCA questions stay on the trees above.')
+print('Query is the default route for general business and data questions: use /qluent:query, which tries a composed plan when the catalog covers the question and otherwise falls back to qluent query.')
+print('Use /qluent:investigate as the advanced route for explicit KPI movement, RCA, trend, or lever analysis backed by one of the configured trees above.')
 print('On first run, orient the user from this tree metadata and offer one concrete first command. Use qluent whoami/status/suggestions only when available; do not probe unsupported project/status commands.')
 print('After an investigation, offer an RCA report, mix-shift report, or elasticity report through /qluent:visualize before any local HTML fallback.')
 print()
-print('Ask a business performance question or use /qluent:investigate to start, for example /qluent:investigate revenue last month.')
+print('Ask a business or data question or use /qluent:query to start.')
 " 2>/dev/null) || context=""
 
 if [ -n "$context" ]; then
@@ -119,7 +130,7 @@ except Exception:
 if not bases:
     sys.exit(0)
 print(f'[Qluent] Query catalog available: {len(bases)} bases, {len(metrics)} metrics (cached at /tmp/qluent-catalog.json).')
-print('For ad-hoc aggregations, breakdowns and rankings the catalog covers, prefer a composed plan (qluent plan; protocol in the compose-authoring skill) over the NL qluent query -- deterministic and catalog-checked.')
+print('Query is the default workflow. /qluent:query prefers a composed plan when this catalog covers the question, then falls back to the NL qluent query.')
 " 2>/dev/null) || compose_context=""
   elif grep -q 'QUERY_CATALOG_INVALID' "$catalog_err" 2>/dev/null; then
     compose_context='[Qluent] This project has a query_catalog that fails to load (fix it under the Model tab) -- composed plans are unavailable until then; ad-hoc questions fall back to qluent query.'

@@ -1,7 +1,7 @@
 # Qluent plugin for Claude Code
 
-Deterministic KPI analysis inside Claude Code. Ask why a metric changed and get
-an answer backed by Shapley attribution — not vibes.
+Business querying and deterministic KPI analysis inside Claude Code. Start
+with the connected catalog; add metric trees when you need governed RCA.
 
 ## Getting Started
 
@@ -35,13 +35,15 @@ Or use slash commands directly:
 
 | Command | What it does |
 |---|---|
+| `/qluent:query` | Default workflow for business and data questions; deterministic composed plan when catalog-covered, NL-to-SQL fallback otherwise |
 | `/qluent:deep-dive` | Cross-tree executive narrative across all configured metric trees |
-| `/qluent:investigate` | Full analysis: validation, trend, evaluation, and RCA |
+| `/qluent:investigate` | Advanced deterministic analysis: validation, trend, evaluation, and RCA |
 | `/qluent:visualize` | Shape the latest analysis into an `RcaReportSpec` (or local HTML fallback) |
-| `/qluent:query` | Ad-hoc natural-language data question answered via SQL (row-level, entity lookups, cuts outside the trees) |
 | `/qluent:setup` | Check installation and configuration |
 
-Start with `/qluent:investigate` for a specific metric tree. Use
+Start with `/qluent:query` for general business and data questions. Use
+`/qluent:investigate` when you explicitly need governed KPI decomposition,
+attribution, trend, or lever evidence from a configured tree. Use
 `/qluent:deep-dive` when you need one executive read across the whole business.
 `/qluent:investigate` already bundles trend, RCA, and segment data; the qluent
 agents run any deeper follow-ups directly against the qluent CLI when the
@@ -68,15 +70,14 @@ Requires a qluent CLI release that includes `qluent trees deep-dive` from
 `qluent-cli#40`. See `/qluent:deep-dive` for the full workflow contract,
 including the synthesis shape and per-tree caveat handling.
 
-## Ad-hoc queries
+## Query-first workflow
 
-`/qluent:query <question>` answers data questions no metric tree covers —
-the trees answer "why did the KPI move"; `/qluent:query` answers everything
-else (row-level lookups, entity lists, arbitrary cuts and exports). It runs
-the qluent backend's natural-language-to-SQL workflow, so it can take a few
-minutes, may ask a clarifying question first, and returns the generated SQL,
-an inline result table, and a download link. Follow-ups continue the same
-conversation via the returned thread id:
+`/qluent:query <question>` is the default entry point. It first uses the
+project catalog to compose a deterministic QueryPlan when coverage is
+complete, then falls back to the backend's natural-language-to-SQL workflow.
+The fallback can take a few minutes and may ask a clarifying question.
+Metric trees remain available as the advanced workflow for governed movement
+analysis and RCA. Follow-ups on NL queries continue via the returned thread:
 
 ```bash
 /qluent:query which restaurants had the most failed deliveries last week?

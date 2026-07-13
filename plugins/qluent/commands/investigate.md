@@ -6,8 +6,8 @@ allowed-tools: Bash(qluent *), Read
 
 # Investigate KPI movement
 
-Primary entry point for metric analysis. Bundles validation, trend,
-evaluation, and root cause analysis in one call.
+Advanced deterministic entry point for KPI movement analysis. Bundles
+validation, trend, evaluation, and root cause analysis in one call.
 
 Follow the `qluent-interpretation` skill for tree resolution, window handling,
 provenance, Shapley/confidence interpretation, elasticity guardrails, and the
@@ -36,8 +36,19 @@ and resolve a tree (Step 2). If it is a single token (`revenue`, `roas`,
 ## Step 2: Resolve a tree
 
 Run `qluent trees list --json-output` and pick the best fit per the tree
-resolution rules in the `qluent-interpretation` skill. If no tree is a clear
-winner, ask the user to choose from the top candidates.
+resolution rules in the `qluent-interpretation` skill.
+
+If the project has zero trees, stop and explain:
+
+```text
+Metric-tree investigation is not configured for this project yet. It is an
+advanced deterministic capability, not a setup requirement. I can answer the
+question through /qluent:query instead.
+```
+
+Offer the equivalent query, but do not silently label query output as
+metric-tree evidence. If trees exist but no tree is a clear winner, ask the
+user to choose from the top candidates.
 
 ## Step 3: Resolve windows
 

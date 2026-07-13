@@ -33,28 +33,33 @@ client-side before any quantitative call.
 Always pass an explicit `<tree_id>` to every qluent subcommand.
 Always use `--json-output`.
 
-## Ad-hoc query routing
+## Query-first routing
 
-**Trees first, composed plans second, NL query last — the more deterministic
-engine wins ties.**
+**Query is the default workflow. Metric trees are the advanced workflow for
+explicit deterministic KPI analysis. Within queries, composed plans beat the
+NL fallback whenever catalog coverage is complete.**
 
 Route to a metric tree (`/qluent:investigate`, `qluent-analyst` tree workflow)
-when the question is about a KPI's level, movement, trend, drivers, mix, or
-sensitivity AND it maps to a configured tree's root metric, child node, or
-declared dimension in the session catalog.
+when the user explicitly asks for deterministic movement analysis, RCA,
+drivers, trend classification, mix-shift, or sensitivity/levers AND the
+question maps to a configured tree's root metric, child node, or declared
+dimension in the session catalog.
 
-Route away from trees when ANY of these hold:
+Keep the default query workflow when ANY of these hold:
 
-1. **Row/entity level** — the question needs individual records or entities
+1. **General metric question** — the user asks for a value, aggregation,
+   breakdown, ranking, comparison, or change without requesting deterministic
+   tree attribution.
+2. **Row/entity level** — the question needs individual records or entities
    (specific orders, customers, transactions; "list", "show me",
    "top N <records>", "which <entities>").
-2. **No tree coverage** — the metric, dimension, or filter is not declared by
+3. **No tree coverage** — the metric, dimension, or filter is not declared by
    any tree in the catalog, and the unsupported-cut companion-tree fallback
    cannot cover it either.
-3. **SQL-shaped ask** — the question is an arbitrary lookup, count, join, or
+4. **SQL-shaped ask** — the question is an arbitrary lookup, count, join, or
    filter combination rather than a movement explanation ("how many X where
    Y", "average Z per W last month").
-4. **Explicit raw-data ask** — the user wants a table, an export, a
+5. **Explicit raw-data ask** — the user wants a table, an export, a
    spreadsheet, or the SQL itself.
 
 For those questions, prefer a **composed plan** (`qluent plan`, protocol in
@@ -64,10 +69,10 @@ dimensions: composed plans are deterministic and catalog-checked. Use the NL
 `qluent query` only when the catalog lacks the vocabulary, the shape exceeds
 the plan node algebra, or the CLI/backend predates the compose surface.
 
-Trees win ties: if a tree can answer deterministically, use the tree; between
-a composed plan and the NL query, the plan wins. Never decline a data question
-because no tree matches — fall through plan, then NL query. Never re-derive
-numbers a tree investigation already returned.
+Do not require a tree before answering a data question. Fall through to a
+composed plan, then the NL query. Once the user explicitly chooses an
+investigation or asks for tree-specific attribution, keep that workflow
+deterministic and never re-derive its numbers with a query.
 
 Provenance labels differ by engine:
 

@@ -1,7 +1,7 @@
 # Qluent Metric Trees
 
-Deterministic KPI analysis from the command line. This plugin provides slash
-commands for investigating business metric movements using metric trees.
+Business querying and deterministic KPI analysis from the command line.
+Querying is the default workflow; metric trees add advanced movement analysis.
 
 ## Be proactive
 
@@ -37,19 +37,20 @@ anything.
 dimensions → segment drill-down; multiple trees → comparison; any tree → trend
 or weekly health check.
 
-**Show, don't tell:** when in doubt, run `/qluent:investigate` on the broadest
-tree for the latest period and present real findings.
+**Show, don't tell:** when in doubt, start from `qluent suggestions
+--json-output` and run `/qluent:query` with a catalog-backed question.
 
 ## Commands
 
-- `/qluent:investigate` — Primary entry point. Bundles validation, trend, evaluation, and RCA.
+- `/qluent:query` — Default entry point for business and data questions; composed plan first, NL-to-SQL fallback.
+- `/qluent:investigate` — Advanced deterministic KPI movement analysis. Bundles validation, trend, evaluation, and RCA.
 - `/qluent:deep-dive` — Opt-in cross-tree executive read. Confirms cost.
 - `/qluent:visualize` — Render the latest analysis as an `RcaReportSpec` (primary) or styled HTML (fallback).
-- `/qluent:query` — Ad-hoc natural-language data question answered via SQL over the warehouse.
 - `/qluent:setup` — Check installation and configuration.
 
-**Start with `/qluent:investigate` for single-tree questions and
-`/qluent:deep-dive` only when the user explicitly wants a cross-business view.**
+**Start with `/qluent:query`. Use `/qluent:investigate` when the user
+explicitly wants deterministic KPI movement, RCA, trend, mix, or lever
+analysis, and `/qluent:deep-dive` only for an explicit cross-business view.**
 The bundled `investigate` response already contains trend, RCA, and segment
 findings — for deeper follow-ups, the `qluent-analyst`, `trend-interpreter`,
 `rca-validator`, and `segment-explorer` agents run the underlying `qluent`
