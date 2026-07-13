@@ -107,22 +107,28 @@ check_path '/tmp/qluent-query-result.json' \
   'tests/test_session_paths.sh'
 
 check_path '/tmp/qluent-catalog.json' \
+  'plugins/qluent/agents/qluent-analyst.md' \
   'plugins/qluent/commands/query.md' \
   'plugins/qluent/scripts/session-start.sh' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_query_contract.sh' \
   'tests/test_session_paths.sh'
 
 check_path '/tmp/qluent-plan.json' \
+  'plugins/qluent/agents/qluent-analyst.md' \
   'plugins/qluent/commands/query.md' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
   'tests/test_session_paths.sh'
 
 check_path '/tmp/qluent-plan-result.json' \
+  'plugins/qluent/agents/qluent-analyst.md' \
   'plugins/qluent/commands/query.md' \
+  'plugins/qluent/commands/visualize.md' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_query_contract.sh' \
   'tests/test_session_paths.sh'
 
 echo "session paths tests passed"
