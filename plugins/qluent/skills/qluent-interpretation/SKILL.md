@@ -35,14 +35,15 @@ Always use `--json-output`.
 
 ## Ad-hoc query routing
 
-**Trees first, query as fallback — trees win ties.**
+**Trees first, composed plans second, NL query last — the more deterministic
+engine wins ties.**
 
 Route to a metric tree (`/qluent:investigate`, `qluent-analyst` tree workflow)
 when the question is about a KPI's level, movement, trend, drivers, mix, or
 sensitivity AND it maps to a configured tree's root metric, child node, or
 declared dimension in the session catalog.
 
-Route to `qluent query` when ANY of these hold:
+Route away from trees when ANY of these hold:
 
 1. **Row/entity level** — the question needs individual records or entities
    (specific orders, customers, transactions; "list", "show me",
@@ -56,20 +57,31 @@ Route to `qluent query` when ANY of these hold:
 4. **Explicit raw-data ask** — the user wants a table, an export, a
    spreadsheet, or the SQL itself.
 
-Trees win ties: if a tree can answer deterministically, use the tree. Never
-decline a data question because no tree matches — fall back to `qluent query`.
-Never use `qluent query` to re-derive numbers a tree investigation already
-returned.
+For those questions, prefer a **composed plan** (`qluent plan`, protocol in
+the `compose-authoring` skill) whenever the CLI supports it and the project's
+query catalog (`qluent catalog`) covers the question's bases, metrics and
+dimensions: composed plans are deterministic and catalog-checked. Use the NL
+`qluent query` only when the catalog lacks the vocabulary, the shape exceeds
+the plan node algebra, or the CLI/backend predates the compose surface.
 
-Ad-hoc results are produced by LLM-generated SQL, not the deterministic tree
-engine. They are not deterministic tree evidence: label their provenance as
-"ad-hoc query" (with the returned SQL as the citation), never blend them into
-Shapley attribution or other tree-derived claims, and verify the returned
-`sql` matches the user's intent before presenting numbers. Run with
-`qluent query "<question>" --json-output`, check `status`
-(`ok` / `clarification_needed` / `error`), and answer clarifications or ask
-follow-ups by re-running with `--thread <thread_id>` from the previous
-response.
+Trees win ties: if a tree can answer deterministically, use the tree; between
+a composed plan and the NL query, the plan wins. Never decline a data question
+because no tree matches — fall through plan, then NL query. Never re-derive
+numbers a tree investigation already returned.
+
+Provenance labels differ by engine:
+
+- **Composed plan** results compile deterministically from the closed-world
+  catalog: label them "composed query (deterministic)" and cite the returned
+  `sql`. They are still not tree evidence — never blend them into Shapley
+  attribution or other tree-derived claims.
+- **NL query** results are produced by LLM-generated SQL: label them "ad-hoc
+  query" (with the returned SQL as the citation) and verify the returned
+  `sql` matches the user's intent before presenting numbers. Run with
+  `qluent query "<question>" --json-output`, check `status`
+  (`ok` / `clarification_needed` / `error`), and answer clarifications or ask
+  follow-ups by re-running with `--thread <thread_id>` from the previous
+  response.
 
 ## Windows
 
@@ -287,6 +299,27 @@ updating that allowlist on purpose.
   `{message, options}`.
 - **Freshness:** holds only the most recent round; the `thread_id` inside it
   is the durable handle for continuing the conversation, not this file.
+
+### `/tmp/qluent-catalog.json` — session query catalog
+- **Producer:** `scripts/session-start.sh` writes it at session start when the
+  CLI/backend support composed plans; otherwise the first
+  `qluent catalog --json-output` of the session (written by `/qluent:query` or
+  any agent following the `compose-authoring` skill).
+- **Consumers:** plan authoring reads the vocabulary (`catalog.*`) and the
+  QueryPlan JSON schema (`plan_schema`) from it instead of re-fetching.
+- **Schema:** the `qluent.catalog.v1` contract — `catalog` (bases, metrics,
+  relationships, derived_dimensions, aliases) and `plan_schema`.
+
+### `/tmp/qluent-plan.json` / `/tmp/qluent-plan-result.json` — composed plan round
+- **Producer:** plan authoring per the `compose-authoring` skill writes the
+  QueryPlan document to `/tmp/qluent-plan.json` and tees the `qluent plan`
+  result to `/tmp/qluent-plan-result.json`; each repair round overwrites both.
+- **Consumers:** the repair loop reads `status`/`error`;
+  `/qluent:visualize --file` reads the result for tabular charts the same way
+  it reads query results.
+- **Schema:** the `qluent.plan.v1` contract — `status`
+  (`ok` / `plan_invalid` / `error`), `sql`, `columns`, `data`, `row_count`,
+  `grain`, `metrics` (per-metric `kind` + `summable`), `plan_summary`.
 
 ### `/tmp/qluent-tree-capabilities.json` — session tree catalog
 - **Producer:** `scripts/session-start.sh` writes the normalized catalog
