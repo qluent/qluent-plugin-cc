@@ -21,58 +21,48 @@ throughout.
 
 ## Step 0: Load the canonical protocols
 
-Before anything else, `Read` the canonical interpretation module:
+Load both protocol modules **in a single message** — two parallel `Read`
+calls, not two round trips:
 
 ```
 ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
-```
-
-Its "Query-first routing" section owns the tree-vs-plan-vs-query decision
-rule and the provenance rules for presenting results. If the composed-plan
-path is available (Step 1), also `Read` the plan-authoring protocol:
-
-```
 ${CLAUDE_PLUGIN_ROOT}/skills/compose-authoring/SKILL.md
 ```
 
-## Step 1: Check CLI availability and capability
+The first owns the tree-vs-plan-vs-query decision rule ("Query-first routing")
+and the provenance rules for presenting results; the second owns plan
+authoring. Load them together rather than waiting to see whether the compose
+path is available — it usually is, and a second sequential read costs more
+than the occasional wasted one.
 
-Verify qluent is installed:
+## Step 1: Read capability off the session banner — do not re-probe
 
-```bash
-which qluent
-```
+`scripts/session-start.sh` already ran this session. It checked the CLI
+version, probed `qluent plan`, and cached the catalog. Re-probing costs a tool
+call, several seconds, and a permission prompt to learn something already in
+your context. Read the answer off the banner instead:
 
-If qluent is missing, stop and tell the user:
+| Session banner said | What to do |
+|---|---|
+| `Query catalog available: N bases, M metrics` | Compose path is on. Continue. |
+| `qluent CLI <v> detected; composed plans need …` | NL only — skip Step 3, and pass the upgrade advice on if the user asks why it is slow. |
+| `query_catalog that fails to load` | NL only — skip Step 3. |
+| `Metric trees are not configured` (and nothing about a catalog) | NL only — skip Step 3. |
+| `CLI is not installed` | Stop: *"qluent is not installed. Run `/qluent:setup` first, then retry `/qluent:query`."* |
+| `CLI is installed but not configured` | Stop: *"Run `/qluent:setup` to authenticate."* |
 
-```text
-qluent is not installed. Run /qluent:setup first, then retry /qluent:query.
-```
-
-Then verify the installed CLI supports the query subcommand:
-
-```bash
-qluent query --help
-```
-
-If the command exits non-zero or says the subcommand is unknown, stop and tell
-the user:
-
-```text
-This qluent CLI does not support `qluent query` yet. Upgrade to the release
-that includes the query command (qluent-cli#92), then retry `/qluent:query`.
-```
-
-Do not fall back to guessing tree commands or writing SQL yourself.
-
-Also probe the composed-plan capability (newer CLI + backend):
+Only if there is **no** qluent banner in this session at all — the hook did
+not run — probe once, in a single call:
 
 ```bash
-qluent plan --help
+which qluent && qluent --version && qluent plan --help
 ```
 
-Non-zero / unknown subcommand simply means the compose path is unavailable —
-skip Step 3 and answer via the NL query. Never stop for this.
+Read it the same way: no qluent, stop and point at `/qluent:setup`; `qluent
+plan` missing or a version below the minimum in
+`${CLAUDE_PLUGIN_ROOT}/scripts/cli-requirements.sh`, skip Step 3 and answer
+via the NL query. Never stop for a missing compose path, and never fall back
+to guessing tree commands or writing SQL yourself.
 
 ## Step 2: Routing check
 
@@ -85,8 +75,8 @@ remain on the query workflow.
 
 ## Step 3: Try a composed plan first
 
-Skip this step when the compose capability probe failed, or when this is a
-follow-up on an existing NL-query thread (`--thread <id>` given).
+Skip this step when Step 1 said the compose path is unavailable, or when this
+is a follow-up on an existing NL-query thread (`--thread <id>` given).
 
 Run the compose path exactly as the `compose-authoring` skill prescribes it.
 The skill owns every command in this step — the catalog fetch and its
@@ -220,8 +210,9 @@ than hardcoding one exact schema. Compose the reply:
 
 ## Rules
 
-- Check for qluent and the `query` subcommand before running; probe `plan`
-  and prefer it when the catalog covers the question.
+- Take CLI availability and compose capability from the session banner; probe
+  only when no banner ran. Prefer the composed plan whenever the catalog
+  covers the question.
 - Follow the `qluent-interpretation` skill for routing, provenance labeling,
   and the boundary between ad-hoc results and tree-derived attribution; the
   `compose-authoring` skill owns plan authoring and repair.
