@@ -40,3 +40,9 @@ jobs:
         run: bash tests/test_analysis_run_handles.sh
       - name: Run query contract test
         run: bash tests/test_query_contract.sh
+      - name: Run CLI version gate test
+        run: bash tests/test_cli_version_gate.sh
+      - name: Run pre-bash approval test
+        run: bash tests/test_pre_bash_approval.sh
+      - name: Run MCP wiring test
+        run: bash tests/test_mcp_wiring.sh

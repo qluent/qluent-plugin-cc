@@ -15,6 +15,36 @@ plausible-but-wrong SQL. You author the plan; the backend owns the SQL.
 This skill is the single source of truth for plan authoring. Commands and
 agents should reference it by name rather than restating the rules.
 
+## Two transports, one protocol
+
+The compose surface is available two ways, and everything below — the
+vocabulary, the authoring rules, the repair loop — is identical across both.
+Only the transport differs.
+
+**Prefer the MCP tools.** The plugin declares an MCP server
+(`plugins/qluent/.claude-plugin/plugin.json`) running `qluent mcp serve`, so
+the compose surface arrives as typed tools:
+
+| tool | arguments | returns |
+|---|---|---|
+| `mcp__qluent__qluent_compose_catalog` | none | the whole catalog contract plus `plan_schema` |
+| `mcp__qluent__qluent_compose_query` | `plan` — a QueryPlan JSON object | the plan contract (`status`, `sql`, `columns`, `data`, `row_count`, `grain`, `metrics`, `plan_summary`, or `plan_invalid` + `error`) |
+
+That path costs no permission prompt, no shell quoting, no temp files, and no
+projection: the catalog tool returns the entire contract, so nothing can be
+lost on the way to you. Call the catalog tool once per session and keep the
+result; call the query tool per plan and per repair round.
+
+**The CLI shapes below are the fallback**, for a CLI whose MCP server did not
+start — an install below the minimum in `scripts/cli-requirements.sh`, a
+Python environment without the `mcp` package, or a server the session failed
+to launch. They are also what `/qluent:visualize --file` needs: it reads a
+saved file, so if a chart is wanted after an MCP-run plan, save the tool's
+result to `$QLUENT_DIR/plan-result.json` before pointing the command at it.
+
+Everything from here down describes the CLI transport. The vocabulary and
+rules apply to both.
+
 ## The catalog is the vocabulary
 
 **This skill owns the exact invocations below.** Commands and agents run them
@@ -25,10 +55,19 @@ Fetch the catalog once per session and cache it. `scripts/session-start.sh`
 normally wrote it already, so the guard usually makes this a no-op:
 
 ```bash
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
 umask 077
-[ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
-jq '{bases: (.catalog.bases | map_values({columns})), metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions, aliases: .catalog.column_aliases}' /tmp/qluent-catalog.json
+[ -s "$QLUENT_DIR/catalog.json" ] || qluent catalog --json-output > "$QLUENT_DIR/catalog.json"
+jq '{bases: .catalog.bases, metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions, column_aliases: .catalog.column_aliases, value_aliases: .catalog.value_aliases, derived_dimension_aliases: .catalog.derived_dimension_aliases, plan_schema: .plan_schema}' "$QLUENT_DIR/catalog.json"
 ```
+
+Project whole base objects — never narrow a base down to its `columns`. The
+per-base metadata below is small and it is the part that changes plan
+correctness —
+dropping it is how a plan silently filters the wrong date column. If the
+output really is unwieldy on a very wide catalog, reduce `columns` to
+`(.columns | length)` for the bases the question does not touch and keep
+every other field; never drop the metadata to save room.
 
 If the catalog command reports that the project has no query catalog, the
 compose path is unavailable for this project: say so and fall back to the NL
@@ -36,18 +75,32 @@ compose path is unavailable for this project: say so and fall back to the NL
 
 Everything a plan references must come from this vocabulary:
 
-- `catalog.bases` — the relations a `source` node may read, with their
-  columns, scope keys and date columns.
+- `catalog.bases` — the relations a `source` node may read. Each base carries
+  `columns` plus the metadata that decides what a plan actually computes:
+  - `date_column` — the column `params.date_range` filters. It differs per
+    base and is often *not* the date a question means; authoring rule 1
+    depends on checking it.
+  - `default_date_lookback_days` — the window applied to `date_column` when
+    a plan omits `params.date_range`. Omitting the range does not mean "all
+    data".
+  - `date_expr`, `date_range_variants` — how that date is expressed and
+    which alternative ranges the base accepts.
+  - `scope_keys`, `scope_variants`, `default_scope_variant`,
+    `scope_value_mappings` — the market/scope columns behind
+    `params.global_entity_id` / `country_name` and a
+    `PLAN_SCOPE_VIOLATION`.
 - `catalog.metrics` — metric name → the bases that can compute it. Pair each
   metric with a base from its own list; the compiler rejects mismatches.
 - `catalog.relationships` — the ONLY joins allowed. Each names its two bases,
   key columns, and cardinality.
 - `catalog.derived_dimensions` — computed dims (time buckets like
   `order_month`, segment buckets) usable directly in `group_by.dims`.
-- `catalog.column_aliases` / `value_aliases` — accepted alternative
-  spellings. When unsure of a value's exact spelling, prefer `contains`
-  filters over `=`.
-- `plan_schema` — the JSON schema the plan document must satisfy.
+- `catalog.column_aliases` / `catalog.value_aliases` /
+  `catalog.derived_dimension_aliases` — accepted alternative spellings. When
+  unsure of a value's exact spelling, prefer `contains` filters over `=`.
+- `plan_schema` — the JSON schema the plan document must satisfy. It sits
+  beside `catalog` in the payload, not inside it. Author against the schema;
+  the table below is a summary of it, not a substitute.
 
 ## Plan shape
 
@@ -89,10 +142,81 @@ Node vocabulary:
 EXCLUSIVE), `currency` (`eur`/`local`), `global_entity_id` / `country_name`
 (market scope).
 
+## Date windows: check the column first
+
+`params.date_range` does not filter "the date". It filters the source base's
+`date_column`, whatever that happens to be — and a base's `date_column` is
+frequently not the date the question means. `customer_order_summary` has
+`date_column: registration_date` while also carrying `order_date` and twelve
+order-shaped metrics, so "average revenue per customer in Q4" put through
+`params.date_range` compiles to
+
+```sql
+WHERE registration_date >= DATE '2025-10-01' AND registration_date < DATE '2026-01-01'
+```
+
+— revenue from customers who *registered* in Q4, not revenue *in* Q4. No
+error, no `plan_invalid`: just a different population, and a plausible number.
+
+**Omitting `params.date_range` is not the safe alternative.** With no range
+the compiler applies the base's `default_date_lookback_days` to the same
+`date_column`, so the window is still wrong and now also invisible.
+Omitting the range never means "all data".
+
+So, before writing any window:
+
+1. Read `bases[<base>].date_column` from the catalog (the projection above
+   keeps it) and decide whether it is the date the question is about.
+2. **It is** → put the window in `params.date_range` and stop. The compiler
+   applies it with partition pruning; a `filter_by` on the same column only
+   costs you that pruning.
+3. **It is not** → prefer a catalog base whose `date_column` is the intended
+   date. If none can compute the required result, filter the intended column
+   with explicit `filter_by` nodes (`>=` start, `<` end — same half-open
+   convention), *and* set `params.date_range` to cover the full possible
+   domain of the base’s `date_column` for every row that could match those
+   filters.
+   Merely containing the intended window is insufficient: an older base date
+   can belong to a row whose intended date is inside the window. Establish the
+   bounds from catalog/project guarantees (including any relevant date
+   semantics), not an arbitrary early date. If you cannot prove complete
+   bounds, the composed plan cannot guarantee a correct population; fall back
+   to the NL query and explain why.
+4. Say which column carried the window when you present the answer. Under
+   `client_safe` the compiled SQL is redacted, so the plan is the only place
+   the reader can see it.
+
+For example, this is valid only when project metadata guarantees that every
+customer registration date is on or after `2010-01-01` (and a customer cannot
+order before registering). The base-date range then contains every customer
+who could have an order in Q4 2025, including customers registered long before
+the order window:
+
+```json
+{"nodes": [
+  {"op": "source", "id": "src", "base": "customer_order_summary"},
+  {"op": "filter_by", "id": "f0", "input": "src", "column": "order_date",
+   "operator": ">=", "value": "2025-10-01"},
+  {"op": "filter_by", "id": "f1", "input": "f0", "column": "order_date",
+   "operator": "<", "value": "2026-01-01"},
+  {"op": "aggregate", "id": "agg", "input": "f1",
+   "metrics": ["average_revenue_per_customer"]}
+], "output": "agg",
+ "params": {"date_range": {"start": "2010-01-01", "end": "2026-01-01"}}}
+```
+
+The same check applies to grouping: a time-grain derived dimension built from
+column A while `params.date_range` filters column B is almost always a
+mistake. Group by a grain of the column the window is on.
+
 ## Authoring rules
 
-1. **Date windows go in `params.date_range`**, never in a `filter_by` — the
-   compiler applies them to the base's date column with partition pruning.
+1. **Date windows follow the "check the column first" procedure above.**
+   `params.date_range` when the base's `date_column` is the date the question
+   means; otherwise prefer an aligned base, or use explicit `filter_by` nodes
+   plus a `date_range` proven to cover the matching rows’ full base-date
+   domain. If neither is possible, fall back. Never assume; the catalog says
+   which.
 2. **Set market scope in `params.global_entity_id`** when the question names a
    market or your access is market-scoped. A `PLAN_SCOPE_VIOLATION` error
    means exactly this.
@@ -109,21 +233,33 @@ EXCLUSIVE), `currency` (`eur`/`local`), `global_entity_id` / `country_name`
 
 ## The repair loop
 
-`Write` the plan document to `/tmp/qluent-plan.json`, then run — again, this
-is the canonical invocation, not one shape among several:
+Write the plan document and run it — this is the canonical invocation, not
+one shape among several:
 
 ```bash
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
 umask 077
-rm -f /tmp/qluent-plan-result.json
-qluent plan --file /tmp/qluent-plan.json --json-output > /tmp/qluent-plan-result.json
-jq '{status, error_code, error, row_count, grain}' /tmp/qluent-plan-result.json
+rm -f "$QLUENT_DIR/plan-result.json"
+cat > "$QLUENT_DIR/plan.json" <<'QLUENT_PLAN'
+<the QueryPlan JSON document>
+QLUENT_PLAN
+qluent plan --file "$QLUENT_DIR/plan.json" --json-output > "$QLUENT_DIR/plan-result.json"
+jq '{status, error_code, error, row_count, grain}' "$QLUENT_DIR/plan-result.json"
 ```
+
+The plan goes in through a quoted heredoc rather than the `Write` tool
+because the session directory is resolved by the prelude in this same shell —
+`Write` needs a literal path and would have to guess one. The quoting also
+keeps `$` and backticks inside JSON string values from expanding.
 
 `umask 077` plus `rm -f` recreate the result file private to the current user
 each round (results can carry warehouse rows and SQL) and clobber any stale
 file or symlink left at the fixed path. The plain redirect — not `| tee` —
 keeps `qluent`'s own exit status as the command's status, so a failed run
 cannot look successful.
+
+The MCP tool returns the same contract as this file's contents, so the branch
+below is the same either way.
 
 - `status: "ok"` — proceed to presentation.
 - `status: "plan_invalid"` — a repair instruction, not a failure. The `error`

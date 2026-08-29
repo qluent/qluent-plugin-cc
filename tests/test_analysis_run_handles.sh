@@ -58,28 +58,19 @@ assert_contains "$DEEP_DIVE" 'optional `analysis_run_uuid`'
 
 # 3. The hook surfaces run ids from cached investigate JSON and remains quiet
 #    for older CLI/backend payloads that do not include the additive field.
+# The rendezvous is scoped to $TMPDIR and the session id (#78), so pointing
+# both at a scratch directory isolates the fixtures completely -- no backing up
+# and restoring machine-global /tmp files.
 tmpdir="$(mktemp -d)"
-viz_file="/tmp/qluent-viz-data.json"
-deep_dive_file="/tmp/qluent-deep-dive-bundle.json"
+trap 'rm -rf "$tmpdir"' EXIT
+export TMPDIR="$tmpdir"
+export CLAUDE_CODE_SESSION_ID="test-analysis-run-handles"
+# shellcheck source=../plugins/qluent/scripts/session-paths.sh
+. "$ROOT/plugins/qluent/scripts/session-paths.sh"
+qluent_ensure_session_dir || fail "could not create the test session directory"
 
-restore_tmp_files() {
-  rm -f "$viz_file" "$deep_dive_file"
-  if [ -f "$tmpdir/viz-data.bak" ]; then
-    cp "$tmpdir/viz-data.bak" "$viz_file"
-  fi
-  if [ -f "$tmpdir/deep-dive.bak" ]; then
-    cp "$tmpdir/deep-dive.bak" "$deep_dive_file"
-  fi
-  rm -rf "$tmpdir"
-}
-
-if [ -f "$viz_file" ]; then
-  cp "$viz_file" "$tmpdir/viz-data.bak"
-fi
-if [ -f "$deep_dive_file" ]; then
-  cp "$deep_dive_file" "$tmpdir/deep-dive.bak"
-fi
-trap restore_tmp_files EXIT
+viz_file="$QLUENT_VIZ_DATA_FILE"
+deep_dive_file="$QLUENT_DEEP_DIVE_FILE"
 
 cat > "$viz_file" <<'JSON'
 {
@@ -90,7 +81,7 @@ cat > "$viz_file" <<'JSON'
 }
 JSON
 
-out=$(TOOL_INPUT='{"command":"qluent trees investigate revenue --period \"last week\" --json-output | tee /tmp/qluent-viz-data.json"}' bash "$HOOK")
+out=$(TOOL_INPUT='{"command":"qluent trees investigate revenue --period \"last week\" --json-output | tee $QLUENT_DIR/viz-data.json"}' bash "$HOOK")
 assert_output_contains "$out" 'Analysis run: 11111111-2222-4333-8444-555555555555'
 assert_output_contains "$out" 'Use AnalysisRun ids as durable handles'
 
@@ -102,7 +93,7 @@ cat > "$viz_file" <<'JSON'
 }
 JSON
 
-out=$(TOOL_INPUT='{"command":"qluent trees investigate revenue --period \"last week\" --json-output | tee /tmp/qluent-viz-data.json"}' bash "$HOOK")
+out=$(TOOL_INPUT='{"command":"qluent trees investigate revenue --period \"last week\" --json-output | tee $QLUENT_DIR/viz-data.json"}' bash "$HOOK")
 assert_output_not_contains "$out" 'Analysis run:'
 
 cat > "$deep_dive_file" <<'JSON'
@@ -115,7 +106,7 @@ cat > "$deep_dive_file" <<'JSON'
 }
 JSON
 
-out=$(TOOL_INPUT='{"command":"qluent trees deep-dive --json-output --period \"last week\" | tee /tmp/qluent-deep-dive-bundle.json"}' bash "$HOOK")
+out=$(TOOL_INPUT='{"command":"qluent trees deep-dive --json-output --period \"last week\" | tee $QLUENT_DIR/deep-dive-bundle.json"}' bash "$HOOK")
 assert_output_contains "$out" 'Analysis runs:'
 assert_output_contains "$out" 'conversion: aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
 assert_output_contains "$out" 'revenue: 99999999-8888-4777-8666-555555555555'

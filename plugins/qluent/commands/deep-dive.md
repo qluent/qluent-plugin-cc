@@ -106,11 +106,12 @@ investigates all configured trees in parallel.
 Run the deterministic bundled command and save the JSON bundle for this session:
 
 ```bash
-qluent trees deep-dive --json-output --period "<period>" | tee /tmp/qluent-deep-dive-bundle.json
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
+qluent trees deep-dive --json-output --period "<period>" | tee "$QLUENT_DIR/deep-dive-bundle.json"
 ```
 
 Keep stderr out of the saved bundle. Progress, usage text, and CLI errors must remain
-on stderr so `/tmp/qluent-deep-dive-bundle.json` round-trips through `jq .` and the
+on stderr so `$QLUENT_DIR/deep-dive-bundle.json` round-trips through `jq .` and the
 renderer can validate it as clean JSON.
 
 If qluent exits non-zero:
@@ -195,7 +196,7 @@ ${CLAUDE_PLUGIN_ROOT}/skills/dashboard-design/SKILL.md
 Write the dashboard to a unique path so older runs do not collide:
 
 ```
-/tmp/qluent-deep-dive-$(date +%Y%m%d-%H%M%S).html
+$QLUENT_DIR/deep-dive-$(date +%Y%m%d-%H%M%S).html
 ```
 
 Compose sections using the skill's insight-to-section mapping, biased toward the
@@ -233,7 +234,7 @@ empty placeholder.
 After writing the file, surface the path so the user can open it locally:
 
 ```
-Wrote insight-driven dashboard: /tmp/qluent-deep-dive-<timestamp>.html
+Wrote insight-driven dashboard: $QLUENT_DIR/deep-dive-<timestamp>.html
 Open with `open <path>` (macOS) or `xdg-open <path>` (Linux).
 ```
 
