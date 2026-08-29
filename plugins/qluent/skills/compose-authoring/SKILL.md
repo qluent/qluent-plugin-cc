@@ -170,16 +170,27 @@ So, before writing any window:
 2. **It is** → put the window in `params.date_range` and stop. The compiler
    applies it with partition pruning; a `filter_by` on the same column only
    costs you that pruning.
-3. **It is not** → filter the intended column with explicit `filter_by`
-   nodes (`>=` start, `<` end — same half-open convention), *and* widen
-   `params.date_range` to a range that provably contains the intended window,
-   so the base's default lookback cannot silently narrow the result behind
-   your filters. Widening trades away partition pruning; keep it as tight as
-   the intended window's own bounds allow rather than reaching for an
-   arbitrarily early start date.
+3. **It is not** → prefer a catalog base whose `date_column` is the intended
+   date. If none can compute the required result, filter the intended column
+   with explicit `filter_by` nodes (`>=` start, `<` end — same half-open
+   convention), *and* set `params.date_range` to cover the full possible
+   domain of the base’s `date_column` for every row that could match those
+   filters.
+   Merely containing the intended window is insufficient: an older base date
+   can belong to a row whose intended date is inside the window. Establish the
+   bounds from catalog/project guarantees (including any relevant date
+   semantics), not an arbitrary early date. If you cannot prove complete
+   bounds, the composed plan cannot guarantee a correct population; fall back
+   to the NL query and explain why.
 4. Say which column carried the window when you present the answer. Under
    `client_safe` the compiled SQL is redacted, so the plan is the only place
    the reader can see it.
+
+For example, this is valid only when project metadata guarantees that every
+customer registration date is on or after `2010-01-01` (and a customer cannot
+order before registering). The base-date range then contains every customer
+who could have an order in Q4 2025, including customers registered long before
+the order window:
 
 ```json
 {"nodes": [
@@ -191,7 +202,7 @@ So, before writing any window:
   {"op": "aggregate", "id": "agg", "input": "f1",
    "metrics": ["average_revenue_per_customer"]}
 ], "output": "agg",
- "params": {"date_range": {"start": "2020-01-01", "end": "2026-01-01"}}}
+ "params": {"date_range": {"start": "2010-01-01", "end": "2026-01-01"}}}
 ```
 
 The same check applies to grouping: a time-grain derived dimension built from
@@ -202,8 +213,10 @@ mistake. Group by a grain of the column the window is on.
 
 1. **Date windows follow the "check the column first" procedure above.**
    `params.date_range` when the base's `date_column` is the date the question
-   means; explicit `filter_by` nodes plus a widened `date_range` when it is
-   not. Never assume; the catalog says which.
+   means; otherwise prefer an aligned base, or use explicit `filter_by` nodes
+   plus a `date_range` proven to cover the matching rows’ full base-date
+   domain. If neither is possible, fall back. Never assume; the catalog says
+   which.
 2. **Set market scope in `params.global_entity_id`** when the question names a
    market or your access is market-scoped. A `PLAN_SCOPE_VIOLATION` error
    means exactly this.

@@ -124,8 +124,12 @@ is_jq_line() {
 decision=""
 saw_qluent_work=false
 
-mapfile -t lines <<< "$command_text"
-total=${#lines[@]}
+lines=()
+total=0
+while IFS= read -r input_line; do
+  lines[$total]="$input_line"
+  total=$((total + 1))
+done <<< "$command_text"
 index=0
 
 while [ "$index" -lt "$total" ]; do

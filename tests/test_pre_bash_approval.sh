@@ -69,6 +69,12 @@ assert_prompts() {
 
 command -v jq >/dev/null || fail "jq is required to run this test"
 
+# Standard macOS still ships Bash 3.2, which has no mapfile builtin. Keep
+# the hook line splitting on the portable read-loop path.
+if grep -Fq mapfile "$HOOK"; then
+  fail "pre-bash.sh must remain compatible with Bash 3.2 (no mapfile)"
+fi
+
 # 0. The hook must see every Bash command. Filtering it to `Bash(qluent *)`
 #    would skip the multi-line shapes, which do not start with `qluent`.
 if grep -Fq '"if": "Bash(qluent *)"' "$HOOKS_JSON"; then

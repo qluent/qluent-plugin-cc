@@ -57,14 +57,17 @@ Only if there is **no** qluent banner in this session at all — the hook did
 not run — probe once, in a single call:
 
 ```bash
-which qluent && qluent --version && qluent plan --help
+which qluent
+qluent --version || true
+qluent plan --help
 ```
 
 Read it the same way: no qluent, stop and point at `/qluent:setup`; `qluent
-plan` missing or a version below the minimum in
+plan` missing or a readable version below the minimum in
 `${CLAUDE_PLUGIN_ROOT}/scripts/cli-requirements.sh`, skip Step 3 and answer
-via the NL query. Never stop for a missing compose path, and never fall back
-to guessing tree commands or writing SQL yourself.
+via the NL query. A missing or failing `--version` does not suppress the
+independent `plan --help` capability probe. Never stop for a missing compose
+path, and never fall back to guessing tree commands or writing SQL yourself.
 
 ## Step 2: Routing check
 
