@@ -1,7 +1,7 @@
 ---
 description: Ask a business or data question — the default Qluent workflow, answered by a deterministic composed QueryPlan when the catalog covers it, else via LLM-generated SQL
 argument-hint: "<question> [--thread <id>]"
-allowed-tools: Bash(which qluent), Bash(qluent *), Bash(jq *), AskUserQuestion, Read, Write
+allowed-tools: Bash(which qluent), Bash(qluent *), Bash(jq *), mcp__qluent__qluent_compose_catalog, mcp__qluent__qluent_compose_query, AskUserQuestion, Read, Write
 ---
 
 # Query (default workflow; composed plan first, NL fallback)
@@ -10,9 +10,10 @@ Use for general business and data questions, including aggregations,
 breakdowns, rankings, row-level or entity lookups, arbitrary filters, and
 explicit raw-data requests. Two engines answer these, tried in order:
 
-1. **Composed plan** (`qluent plan`) — you author a typed QueryPlan against
-   the project's query catalog; the backend compiles it deterministically.
-   Preferred whenever the catalog covers the question.
+1. **Composed plan** — you author a typed QueryPlan against the project's
+   query catalog; the backend compiles it deterministically. Preferred
+   whenever the catalog covers the question. Runs over the plugin's MCP tools
+   when they are available, and over `qluent plan` when they are not.
 2. **NL query** (`qluent query`) — the backend's LLM workflow (natural
    language -> generated SQL -> execution); non-deterministic. The fallback.
 
@@ -45,6 +46,7 @@ your context. Read the answer off the banner instead:
 | Session banner said | What to do |
 |---|---|
 | `Query catalog available: N bases, M metrics` | Compose path is on. Continue. |
+| (independently) `mcp__qluent__qluent_compose_query` is in your tool list | Use the MCP transport — no probe, no shell, no permission prompt. |
 | `qluent CLI <v> detected; composed plans need …` | NL only — skip Step 3, and pass the upgrade advice on if the user asks why it is slow. |
 | `query_catalog that fails to load` | NL only — skip Step 3. |
 | `Metric trees are not configured` (and nothing about a catalog) | NL only — skip Step 3. |
@@ -79,11 +81,11 @@ Skip this step when Step 1 said the compose path is unavailable, or when this
 is a follow-up on an existing NL-query thread (`--thread <id>` given).
 
 Run the compose path exactly as the `compose-authoring` skill prescribes it.
-The skill owns every command in this step — the catalog fetch and its
-projection, the coverage decision, plan authoring, the `qluent plan`
-invocation, and the `plan_invalid` repair loop. Follow it there; do not
-restate or re-derive those commands here, and do not substitute a variant of
-your own.
+The skill owns everything in this step — which transport to use (its MCP
+tools when present, the CLI shapes otherwise), the catalog fetch and its
+projection, the coverage decision, plan authoring, the plan invocation, and
+the `plan_invalid` repair loop. Follow it there; do not restate or re-derive
+those commands here, and do not substitute a variant of your own.
 
 This command owns only what happens to the outcome:
 
@@ -181,7 +183,8 @@ jq '{status, answer, sql, columns, row_count, truncated, thread_id, download_url
 jq '.data[:20]' "$QLUENT_DIR/query-result.json"
 ```
 
-For a composed-plan result:
+For a composed-plan result run over MCP, read those same fields off the tool
+result directly — there is no file to open. For one run over the CLI:
 
 ```bash
 QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
