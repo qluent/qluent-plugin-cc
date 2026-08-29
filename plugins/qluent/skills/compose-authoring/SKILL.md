@@ -25,9 +25,10 @@ Fetch the catalog once per session and cache it. `scripts/session-start.sh`
 normally wrote it already, so the guard usually makes this a no-op:
 
 ```bash
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
 umask 077
-[ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
-jq '{bases: .catalog.bases, metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions, column_aliases: .catalog.column_aliases, value_aliases: .catalog.value_aliases, derived_dimension_aliases: .catalog.derived_dimension_aliases, plan_schema: .plan_schema}' /tmp/qluent-catalog.json
+[ -s "$QLUENT_DIR/catalog.json" ] || qluent catalog --json-output > "$QLUENT_DIR/catalog.json"
+jq '{bases: .catalog.bases, metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions, column_aliases: .catalog.column_aliases, value_aliases: .catalog.value_aliases, derived_dimension_aliases: .catalog.derived_dimension_aliases, plan_schema: .plan_schema}' "$QLUENT_DIR/catalog.json"
 ```
 
 Project whole base objects — never narrow a base down to its `columns`. The
@@ -189,15 +190,24 @@ mistake. Group by a grain of the column the window is on.
 
 ## The repair loop
 
-`Write` the plan document to `/tmp/qluent-plan.json`, then run — again, this
-is the canonical invocation, not one shape among several:
+Write the plan document and run it — this is the canonical invocation, not
+one shape among several:
 
 ```bash
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
 umask 077
-rm -f /tmp/qluent-plan-result.json
-qluent plan --file /tmp/qluent-plan.json --json-output > /tmp/qluent-plan-result.json
-jq '{status, error_code, error, row_count, grain}' /tmp/qluent-plan-result.json
+rm -f "$QLUENT_DIR/plan-result.json"
+cat > "$QLUENT_DIR/plan.json" <<'QLUENT_PLAN'
+<the QueryPlan JSON document>
+QLUENT_PLAN
+qluent plan --file "$QLUENT_DIR/plan.json" --json-output > "$QLUENT_DIR/plan-result.json"
+jq '{status, error_code, error, row_count, grain}' "$QLUENT_DIR/plan-result.json"
 ```
+
+The plan goes in through a quoted heredoc rather than the `Write` tool
+because the session directory is resolved by the prelude in this same shell —
+`Write` needs a literal path and would have to guess one. The quoting also
+keeps `$` and backticks inside JSON string values from expanding.
 
 `umask 077` plus `rm -f` recreate the result file private to the current user
 each round (results can carry warehouse rows and SQL) and clobber any stale

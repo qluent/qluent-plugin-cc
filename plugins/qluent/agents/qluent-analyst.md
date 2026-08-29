@@ -50,7 +50,7 @@ that skill owns the catalog fetch, plan authoring, the `qluent plan`
 invocation, and the repair loop. Do not restate those commands here or invent
 a variant of your own.
 
-On `ok`, answer from the rows in `/tmp/qluent-plan-result.json`, show the
+On `ok`, answer from the rows in `$QLUENT_DIR/plan-result.json`, show the
 compiled SQL, respect `grain` and `metrics[*].summable`, label the provenance
 **composed query (deterministic)**, then stop.
 
@@ -60,14 +60,15 @@ question, or plan execution returns a hard error. Say which vocabulary or
 capability forced the fallback. Run:
 
 ```bash
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
 set -o pipefail
 umask 077
 question=$(command cat <<'QLUENT_QUERY'
 <question>
 QLUENT_QUERY
 )
-rm -f /tmp/qluent-query-result.json
-qluent query "$question" --json-output | tee /tmp/qluent-query-result.json
+rm -f "$QLUENT_DIR/query-result.json"
+qluent query "$question" --json-output | tee "$QLUENT_DIR/query-result.json"
 ```
 
 (The quoted heredoc keeps user-controlled question text inert instead of
@@ -89,7 +90,8 @@ it directly. Otherwise list trees and pick the best fit; ask the user with
 the top 2–3 candidates if no clear winner.
 
 ```bash
-qluent trees investigate <tree_id> --period "<period>" --json-output | tee /tmp/qluent-viz-data.json
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
+qluent trees investigate <tree_id> --period "<period>" --json-output | tee "$QLUENT_DIR/viz-data.json"
 ```
 
 Always pipe through `tee` to auto-save visualization data.

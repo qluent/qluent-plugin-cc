@@ -116,14 +116,15 @@ Ad-hoc queries run a full NL->SQL->warehouse workflow and can take several minut
 Run with a long Bash timeout (600000 ms) and save the JSON for this session:
 
 ```bash
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
 set -o pipefail
 umask 077
 question=$(command cat <<'QLUENT_QUERY'
 <question>
 QLUENT_QUERY
 )
-rm -f /tmp/qluent-query-result.json
-qluent query "$question" --json-output | tee /tmp/qluent-query-result.json
+rm -f "$QLUENT_DIR/query-result.json"
+qluent query "$question" --json-output | tee "$QLUENT_DIR/query-result.json"
 ```
 
 This shape is load-bearing, not style:
@@ -159,14 +160,15 @@ present the clarification `message` and its `options` to the user with
 `AskUserQuestion` (the user can always answer free-text), then re-run:
 
 ```bash
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
 set -o pipefail
 umask 077
 answer=$(command cat <<'QLUENT_ANSWER'
 <the user's answer>
 QLUENT_ANSWER
 )
-rm -f /tmp/qluent-query-result.json
-qluent query "$answer" --thread <thread_id> --json-output | tee /tmp/qluent-query-result.json
+rm -f "$QLUENT_DIR/query-result.json"
+qluent query "$answer" --thread <thread_id> --json-output | tee "$QLUENT_DIR/query-result.json"
 ```
 
 (The answer text is user-controlled too — same quoted-heredoc rule as Step 4.
@@ -184,15 +186,17 @@ payload (it can hold up to 1000 rows) into the conversation.
 For an NL-query result:
 
 ```bash
-jq '{status, answer, sql, columns, row_count, truncated, thread_id, download_url, google_sheets_url}' /tmp/qluent-query-result.json
-jq '.data[:20]' /tmp/qluent-query-result.json
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
+jq '{status, answer, sql, columns, row_count, truncated, thread_id, download_url, google_sheets_url}' "$QLUENT_DIR/query-result.json"
+jq '.data[:20]' "$QLUENT_DIR/query-result.json"
 ```
 
 For a composed-plan result:
 
 ```bash
-jq '{status, sql, columns, row_count, grain, metrics, plan_summary}' /tmp/qluent-plan-result.json
-jq '.data[:20]' /tmp/qluent-plan-result.json
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
+jq '{status, sql, columns, row_count, grain, metrics, plan_summary}' "$QLUENT_DIR/plan-result.json"
+jq '.data[:20]' "$QLUENT_DIR/plan-result.json"
 ```
 
 The payload shape may evolve with the CLI, so inspect fields by meaning rather
@@ -224,8 +228,8 @@ than hardcoding one exact schema. Compose the reply:
 - Follow-ups on an NL result reuse `--thread <thread_id>`; follow-ups on a
   plan result modify the plan document and re-run `qluent plan`.
 - For charts over the result, offer
-  `/qluent:visualize --file /tmp/qluent-query-result.json` (or
-  `--file /tmp/qluent-plan-result.json`)
+  `/qluent:visualize --file $QLUENT_DIR/query-result.json` (or
+  `--file $QLUENT_DIR/plan-result.json`)
   (insight-driven HTML; the `--simple` renderer does not support query
   payloads).
 - Never write or edit SQL yourself; the backend owns SQL generation. Author

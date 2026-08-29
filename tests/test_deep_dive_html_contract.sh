@@ -45,8 +45,8 @@ assert_contains "$DEEP_DIVE" \
   '${CLAUDE_PLUGIN_ROOT}/skills/dashboard-design/SKILL.md'
 
 # 4. The HTML output must use a unique timestamped path so older runs do not
-#    collide. Mirrors the /tmp/qluent-viz-<timestamp>.html convention.
-assert_contains "$DEEP_DIVE" '/tmp/qluent-deep-dive-$(date +%Y%m%d-%H%M%S).html'
+#    collide, inside the session workspace. Mirrors viz-<timestamp>.html.
+assert_contains "$DEEP_DIVE" '$QLUENT_DIR/deep-dive-$(date +%Y%m%d-%H%M%S).html'
 
 # 5. The "insight takeaways" surface — the user-visible feature being restored
 #    from the Apr 10 dashboard — must be present in the prompt.

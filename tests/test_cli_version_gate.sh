@@ -90,21 +90,16 @@ for case_line in "${version_at_least_cases[@]}"; do
     fail "qluent_version_at_least $have $want returned $actual, expected $expected"
 done
 
-# 4. Session-start behavior on both sides of the boundary.
+# 4. Session-start behavior on both sides of the boundary. The rendezvous is
+#    scoped to $TMPDIR and the session id (#78), so a scratch TMPDIR isolates
+#    these runs from any real session.
 tmpdir="$(mktemp -d)"
-catalog_file="/tmp/qluent-catalog.json"
-
-restore() {
-  rm -f "$catalog_file"
-  if [ -f "$tmpdir/catalog.bak" ]; then
-    cp "$tmpdir/catalog.bak" "$catalog_file"
-  fi
-  rm -rf "$tmpdir"
-}
-if [ -f "$catalog_file" ]; then
-  cp "$catalog_file" "$tmpdir/catalog.bak"
-fi
-trap restore EXIT
+trap 'rm -rf "$tmpdir"' EXIT
+export TMPDIR="$tmpdir"
+export CLAUDE_CODE_SESSION_ID="test-cli-version-gate"
+# shellcheck source=../plugins/qluent/scripts/session-paths.sh
+. "$ROOT/plugins/qluent/scripts/session-paths.sh"
+catalog_file="$QLUENT_CATALOG_FILE"
 
 # A fake CLI whose version is whatever QLUENT_FAKE_VERSION says. It supports
 # `plan`/`catalog` regardless, so a passing test proves the *version* gate

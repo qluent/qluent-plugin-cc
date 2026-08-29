@@ -23,18 +23,18 @@ assert_not_contains() {
 }
 
 assert_contains "$ROOT/plugins/qluent/commands/investigate.md" \
-  '--json-output | tee /tmp/qluent-viz-data.json'
+  '--json-output | tee "$QLUENT_DIR/viz-data.json"'
 assert_not_contains "$ROOT/plugins/qluent/commands/investigate.md" \
-  '--json-output 2>&1 | tee /tmp/qluent-viz-data.json'
+  '--json-output 2>&1 | tee "$QLUENT_DIR/viz-data.json"'
 assert_contains "$ROOT/plugins/qluent/commands/deep-dive.md" \
-  '--json-output --period "<period>" | tee /tmp/qluent-deep-dive-bundle.json'
+  '--json-output --period "<period>" | tee "$QLUENT_DIR/deep-dive-bundle.json"'
 assert_not_contains "$ROOT/plugins/qluent/commands/deep-dive.md" \
-  '--json-output --period "<period>" 2>&1 | tee /tmp/qluent-deep-dive-bundle.json'
+  '--json-output --period "<period>" 2>&1 | tee "$QLUENT_DIR/deep-dive-bundle.json"'
 
 assert_contains "$ROOT/plugins/qluent/agents/qluent-analyst.md" \
-  '--json-output | tee /tmp/qluent-viz-data.json'
+  '--json-output | tee "$QLUENT_DIR/viz-data.json"'
 assert_not_contains "$ROOT/plugins/qluent/agents/qluent-analyst.md" \
-  '--json-output 2>&1 | tee /tmp/qluent-viz-data.json'
+  '--json-output 2>&1 | tee "$QLUENT_DIR/viz-data.json"'
 
 assert_contains "$ROOT/plugins/qluent/templates/render-charts.html" \
   'const rootNode = getRootNode(qdata);'

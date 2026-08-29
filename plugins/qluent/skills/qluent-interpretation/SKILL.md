@@ -127,7 +127,7 @@ analysis from the returned JSON and do not fabricate a run id.
 
 When a user provides an existing `analysis_run_uuid`, prefer continuing from
 that saved run over creating a fresh investigation. First check whether the id
-matches the current `/tmp/qluent-viz-data.json` payload. If the installed
+matches the current `$QLUENT_DIR/viz-data.json` payload. If the installed
 qluent CLI exposes list/get commands for saved analysis runs, fetch the run and
 continue from that payload. If the installed CLI cannot fetch saved
 AnalysisRuns yet and the cached payload does not match, say so plainly and ask
@@ -220,7 +220,7 @@ compatible companion tree with the same windows and synthesize both views.
 
 ### Selection algorithm
 
-Given the cached catalog (`/tmp/qluent-tree-capabilities.json`, or a fresh
+Given the cached catalog (`$QLUENT_DIR/tree-capabilities.json`, or a fresh
 `qluent trees list --json-output`), the current tree id, and the requested
 dimensions, rank candidates as follows:
 
@@ -260,14 +260,49 @@ fallback styling.
 
 ## Session paths
 
-Four temp files form the rendezvous between qluent producers and consumers
-within a session. This section is the canonical declaration; every producer,
-consumer, test fixture, and the plugin-level `CLAUDE.md` surface references
-the path string verbatim. The set of files allowed to mention each path is
-pinned by `tests/test_session_paths.sh` — adding a new consumer requires
-updating that allowlist on purpose.
+A handful of JSON files form the rendezvous between qluent producers and
+consumers within a session. This section is the canonical declaration; every
+producer, consumer, test fixture, and the plugin-level `CLAUDE.md` surface
+references the file by the same name. The set of files allowed to mention
+each one is pinned by `tests/test_session_paths.sh` — adding a new consumer
+requires updating that allowlist on purpose.
 
-### `/tmp/qluent-viz-data.json` — investigation cache
+### The session workspace, `$QLUENT_DIR`
+
+They all live in one directory, private to this user and this Claude session:
+
+```
+${TMPDIR:-/tmp}/qluent-$UID-$CLAUDE_CODE_SESSION_ID
+```
+
+`scripts/session-start.sh` creates it 0700 and announces the resolved path in
+the session banner. **Every Bash call that touches one of these files starts
+with the prelude that resolves it:**
+
+```bash
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
+```
+
+`session-dir.sh` creates the directory, refuses a directory owned by someone
+else, and exits non-zero with a reason rather than printing a path it could
+not make safe — so `|| exit 1` is load-bearing, not decoration. A `$QLUENT_DIR`
+reference in a command that did not run the prelude is a bug: the variable is
+empty and the path resolves to the filesystem root.
+
+Never rendezvous on a fixed `/tmp/qluent-*.json` path. Those were global to
+the machine, so a second session against a different project overwrote the
+first session's catalog — after which plans were authored against the wrong
+project's vocabulary — and a file owned by another user could be neither
+removed nor replaced under `/tmp`'s sticky bit, which the old code did not
+check before announcing the catalog as cached. Scoping by uid and session id
+removes both failure modes; `scripts/session-paths.sh` is the one declaration
+of the naming scheme, shared by the hooks.
+
+The directory is disposable. Nothing in it needs to survive the session: the
+durable handles are the `thread_id` inside a query result and the
+`analysis_run_uuid` inside an investigation, not these files.
+
+### `$QLUENT_DIR/viz-data.json` — investigation cache
 - **Producer:** `/qluent:investigate` (and `qluent-analyst`) tee bundled
   investigation JSON to this path.
 - **Consumers:** `/qluent:visualize` reads it to build `RcaReportSpec`;
@@ -282,7 +317,7 @@ updating that allowlist on purpose.
   and the `tree_id` matches the question before rendering. Stale or
   mismatched data triggers a re-run suggestion.
 
-### `/tmp/qluent-deep-dive-bundle.json` — cross-tree deep-dive bundle
+### `$QLUENT_DIR/deep-dive-bundle.json` — cross-tree deep-dive bundle
 - **Producer:** `/qluent:deep-dive` tees the bundled cross-tree JSON to this
   path.
 - **Consumer:** `scripts/post-bash.sh` checks for it and steers synthesis
@@ -290,7 +325,7 @@ updating that allowlist on purpose.
 - **Schema:** bundle-level period/windows plus per-tree results per
   `qluent trees deep-dive --json-output`.
 
-### `/tmp/qluent-query-result.json` — latest ad-hoc query result
+### `$QLUENT_DIR/query-result.json` — latest ad-hoc query result
 - **Producer:** `/qluent:query` (and `qluent-analyst` when it falls back to
   `qluent query`) tee the latest query JSON to this path; each clarification
   round or follow-up overwrites it.
@@ -305,7 +340,7 @@ updating that allowlist on purpose.
 - **Freshness:** holds only the most recent round; the `thread_id` inside it
   is the durable handle for continuing the conversation, not this file.
 
-### `/tmp/qluent-catalog.json` — session query catalog
+### `$QLUENT_DIR/catalog.json` — session query catalog
 - **Producer:** `scripts/session-start.sh` writes it at session start when the
   CLI/backend support composed plans; otherwise the session's first catalog
   fetch, issued by the `compose-authoring` skill — the single owner of that
@@ -320,10 +355,10 @@ updating that allowlist on purpose.
   `compose-authoring` skill's projection keeps all of it, because that
   metadata decides which column a plan's date window lands on.
 
-### `/tmp/qluent-plan.json` / `/tmp/qluent-plan-result.json` — composed plan round
+### `$QLUENT_DIR/plan.json` / `$QLUENT_DIR/plan-result.json` — composed plan round
 - **Producer:** plan authoring per the `compose-authoring` skill writes the
-  QueryPlan document to `/tmp/qluent-plan.json` and redirects the `qluent plan`
-  result to `/tmp/qluent-plan-result.json`; each repair round overwrites both.
+  QueryPlan document to `$QLUENT_DIR/plan.json` and redirects the `qluent plan`
+  result to `$QLUENT_DIR/plan-result.json`; each repair round overwrites both.
   That skill owns the exact invocations — no other file restates them.
 - **Consumers:** the repair loop reads `status`/`error`;
   `/qluent:visualize --file` reads the result for tabular charts the same way
@@ -332,7 +367,7 @@ updating that allowlist on purpose.
   (`ok` / `plan_invalid` / `error`), `sql`, `columns`, `data`, `row_count`,
   `grain`, `metrics` (per-metric `kind` + `summable`), `plan_summary`.
 
-### `/tmp/qluent-tree-capabilities.json` — session tree catalog
+### `$QLUENT_DIR/tree-capabilities.json` — session tree catalog
 - **Producer:** `scripts/session-start.sh` writes the normalized catalog
   (tree id, label, root metric, dimensions, children) at session start.
 - **Consumers:** `scripts/post-bash.sh` and `scripts/select-fallback-tree.sh`

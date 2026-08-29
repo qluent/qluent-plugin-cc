@@ -27,8 +27,16 @@ EOF
   exit 0
 fi
 
+# Per-session rendezvous directory. Every producer and consumer derives it the
+# same way; see scripts/session-paths.sh for why it is not a fixed /tmp path.
+# shellcheck source=./session-paths.sh
+. "$(dirname "${BASH_SOURCE[0]}")/session-paths.sh"
+
+session_dir_ready=true
+qluent_ensure_session_dir 2>/dev/null || session_dir_ready=false
+
 # Extract tree metadata for context injection
-catalog_file=/tmp/qluent-tree-capabilities.json
+catalog_file="$QLUENT_TREE_CAPABILITIES_FILE"
 
 context=$(printf '%s' "$output" | QLUENT_TREE_CATALOG="$catalog_file" "$python_bin" -c "
 import sys, json
@@ -119,9 +127,17 @@ fi
 # shellcheck source=./cli-requirements.sh
 . "$(dirname "${BASH_SOURCE[0]}")/cli-requirements.sh"
 
-compose_catalog=/tmp/qluent-catalog.json
+if $session_dir_ready; then
+  echo ""
+  echo "[Qluent] Session workspace: $QLUENT_SESSION_DIR"
+  echo "Every qluent result file for this session lives there. It is private to this session and this user; resolve it with scripts/session-dir.sh rather than assuming a fixed /tmp path."
+fi
+
+compose_catalog="$QLUENT_CATALOG_FILE"
 compose_context=""
-# The fixed path outlives a Claude session; never reuse another project's catalog.
+# Re-running the hook in the same session (for example after /clear) must not
+# leave last run's catalog behind. Cross-session reuse is already impossible:
+# the path is scoped to this session.
 rm -f "$compose_catalog"
 
 cli_version=$(qluent_cli_version || true)
@@ -131,9 +147,19 @@ if [ -n "$cli_version" ] && ! qluent_version_at_least "$cli_version" "$QLUENT_MI
 elif qluent plan --help &>/dev/null; then
   catalog_err=$(mktemp)
   if catalog_json=$(qluent catalog --json-output 2>"$catalog_err"); then
-    (umask 077; printf '%s' "$catalog_json" > "$compose_catalog")
-    compose_context=$(printf '%s' "$catalog_json" | "$python_bin" -c "
-import sys, json
+    # Claim the cache only if the write actually landed. The old code asserted
+    # "cached at ..." unconditionally, so an unwritable path was reported as a
+    # success and later steps read whatever was there.
+    catalog_cached=false
+    if $session_dir_ready && (umask 077; printf '%s' "$catalog_json" > "$compose_catalog") 2>/dev/null \
+       && [ -s "$compose_catalog" ]; then
+      catalog_cached=true
+    else
+      rm -f "$compose_catalog"
+    fi
+    compose_context=$(printf '%s' "$catalog_json" \
+      | QLUENT_CATALOG_CACHED="$catalog_cached" QLUENT_CATALOG_PATH="$compose_catalog" "$python_bin" -c "
+import sys, json, os
 try:
     data = json.load(sys.stdin)
     catalog = data.get('catalog') or {}
@@ -143,13 +169,22 @@ except Exception:
     sys.exit(0)
 if not bases:
     sys.exit(0)
-print(f'[Qluent] Query catalog available: {len(bases)} bases, {len(metrics)} metrics (cached at /tmp/qluent-catalog.json).')
+if os.environ.get('QLUENT_CATALOG_CACHED') == 'true':
+    where = 'cached at ' + os.environ.get('QLUENT_CATALOG_PATH', '')
+else:
+    where = 'not cached -- the session workspace is unwritable, so plan authoring will re-fetch it'
+print(f'[Qluent] Query catalog available: {len(bases)} bases, {len(metrics)} metrics ({where}).')
 print('Query is the default workflow. /qluent:query prefers a composed plan when this catalog covers the question, then falls back to the NL qluent query.')
 " 2>/dev/null) || compose_context=""
   elif grep -q 'QUERY_CATALOG_INVALID' "$catalog_err" 2>/dev/null; then
     compose_context='[Qluent] This project has a query_catalog that fails to load (fix it under the Model tab) -- composed plans are unavailable until then; ad-hoc questions fall back to qluent query.'
   fi
   rm -f "$catalog_err"
+fi
+
+if ! $session_dir_ready; then
+  echo ""
+  echo "[Qluent] Could not create this session's workspace directory ($QLUENT_SESSION_DIR); results will not be cached between steps."
 fi
 
 if [ -n "$compose_context" ]; then

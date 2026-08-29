@@ -48,10 +48,14 @@ if ! $is_investigate && ! $is_deep_dive && ! $is_trend && ! $is_rca && ! $is_com
   exit 0
 fi
 
-viz_file=/tmp/qluent-viz-data.json
-deep_dive_file=/tmp/qluent-deep-dive-bundle.json
-catalog_file=/tmp/qluent-tree-capabilities.json
-query_file=/tmp/qluent-query-result.json
+# Per-session rendezvous directory, derived exactly as the producers derive it.
+# shellcheck source=./session-paths.sh
+. "$SCRIPT_DIR/session-paths.sh"
+
+viz_file="$QLUENT_VIZ_DATA_FILE"
+deep_dive_file="$QLUENT_DEEP_DIVE_FILE"
+catalog_file="$QLUENT_TREE_CAPABILITIES_FILE"
+query_file="$QLUENT_QUERY_RESULT_FILE"
 
 parse_requested_dims_from_command() {
   local command_text="$1"
@@ -252,23 +256,23 @@ if [[ "$command" == *"--json-output"* ]]; then
         if [ -n "$query_sheets" ]; then
           echo "  → Google Sheet: ${query_sheets}"
         fi
-        echo "  → For charts over this result, use /qluent:visualize --file /tmp/qluent-query-result.json (insight-driven HTML)."
+        echo "  → For charts over this result, use /qluent:visualize --file $query_file (insight-driven HTML)."
       fi
     else
-      echo "  → To keep the result available for follow-ups and visualization, pipe output through: | tee /tmp/qluent-query-result.json"
+      echo "  → To keep the result available for follow-ups and visualization, pipe output through: | tee $query_file"
     fi
   elif $is_deep_dive; then
     if [ -f "$deep_dive_file" ]; then
       echo "  → Deep-dive bundle saved. Synthesize one cross-tree narrative; do not split it into separate tree reports."
       print_analysis_run_references "$deep_dive_file"
     else
-      echo "  → To cache the deep-dive bundle for follow-up questions, pipe output through: | tee /tmp/qluent-deep-dive-bundle.json"
+      echo "  → To cache the deep-dive bundle for follow-up questions, pipe output through: | tee $deep_dive_file"
     fi
   elif [ -f "$viz_file" ]; then
     echo "  → Visualization data saved. Use /qluent:visualize to produce a UI RcaReportSpec first; use styled HTML only as a local fallback."
     print_analysis_run_references "$viz_file"
   else
-    echo "  → To enable /qluent:visualize, pipe output through: | tee /tmp/qluent-viz-data.json"
+    echo "  → To enable /qluent:visualize, pipe output through: | tee $viz_file"
   fi
 fi
 
