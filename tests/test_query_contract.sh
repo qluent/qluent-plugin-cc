@@ -60,7 +60,14 @@ assert_output_not_contains() {
 # 1. The command exists and owns the capability guard, clarification loop,
 #    and session-path tee.
 [ -f "$QUERY_CMD" ] || fail "commands/query.md is missing"
-assert_contains "$QUERY_CMD" 'qluent query --help'
+# #76: capability comes off the session banner, which session-start.sh already
+# established. A re-probe costs a call, several seconds and a permission
+# prompt to learn something already in context -- so the command must read the
+# banner, and probe only when no banner ran.
+assert_contains "$QUERY_CMD" 'do not re-probe'
+assert_contains "$QUERY_CMD" 'Query catalog available'
+assert_contains "$QUERY_CMD" 'no** qluent banner in this session at all'
+assert_contains "$QUERY_CMD" 'which qluent && qluent --version && qluent plan --help'
 assert_contains "$QUERY_CMD" '--thread'
 assert_contains "$QUERY_CMD" 'AskUserQuestion'
 assert_contains "$QUERY_CMD" '--json-output | tee "$QLUENT_DIR/query-result.json"'
@@ -86,6 +93,12 @@ assert_contains "$QUERY_CMD" 'scripts/session-dir.sh'
 assert_contains "$ANALYST" 'scripts/session-dir.sh'
 assert_contains "$QUERY_CMD" 'rm -f "$QLUENT_DIR/query-result.json"'
 assert_contains "$ANALYST" 'umask 077'
+
+# 1b. Both protocol modules load in one message rather than two sequential
+#     reads (#76). The pointers themselves are the #32 seam, pinned by
+#     tests/test_protocol_locality.sh.
+assert_contains "$QUERY_CMD" '**in a single message**'
+assert_contains "$QUERY_CMD" 'skills/compose-authoring/SKILL.md'
 
 # 2. The skill owns the canonical routing rule and session-path declaration.
 assert_contains "$SKILL" '## Query-first routing'
