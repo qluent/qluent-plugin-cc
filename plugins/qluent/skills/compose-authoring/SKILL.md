@@ -15,6 +15,36 @@ plausible-but-wrong SQL. You author the plan; the backend owns the SQL.
 This skill is the single source of truth for plan authoring. Commands and
 agents should reference it by name rather than restating the rules.
 
+## Two transports, one protocol
+
+The compose surface is available two ways, and everything below — the
+vocabulary, the authoring rules, the repair loop — is identical across both.
+Only the transport differs.
+
+**Prefer the MCP tools.** The plugin declares an MCP server
+(`plugins/qluent/.claude-plugin/plugin.json`) running `qluent mcp serve`, so
+the compose surface arrives as typed tools:
+
+| tool | arguments | returns |
+|---|---|---|
+| `mcp__qluent__qluent_compose_catalog` | none | the whole catalog contract plus `plan_schema` |
+| `mcp__qluent__qluent_compose_query` | `plan` — a QueryPlan JSON object | the plan contract (`status`, `sql`, `columns`, `data`, `row_count`, `grain`, `metrics`, `plan_summary`, or `plan_invalid` + `error`) |
+
+That path costs no permission prompt, no shell quoting, no temp files, and no
+projection: the catalog tool returns the entire contract, so nothing can be
+lost on the way to you. Call the catalog tool once per session and keep the
+result; call the query tool per plan and per repair round.
+
+**The CLI shapes below are the fallback**, for a CLI whose MCP server did not
+start — an install below the minimum in `scripts/cli-requirements.sh`, a
+Python environment without the `mcp` package, or a server the session failed
+to launch. They are also what `/qluent:visualize --file` needs: it reads a
+saved file, so if a chart is wanted after an MCP-run plan, save the tool's
+result to `$QLUENT_DIR/plan-result.json` before pointing the command at it.
+
+Everything from here down describes the CLI transport. The vocabulary and
+rules apply to both.
+
 ## The catalog is the vocabulary
 
 **This skill owns the exact invocations below.** Commands and agents run them
@@ -214,6 +244,9 @@ each round (results can carry warehouse rows and SQL) and clobber any stale
 file or symlink left at the fixed path. The plain redirect — not `| tee` —
 keeps `qluent`'s own exit status as the command's status, so a failed run
 cannot look successful.
+
+The MCP tool returns the same contract as this file's contents, so the branch
+below is the same either way.
 
 - `status: "ok"` — proceed to presentation.
 - `status: "plan_invalid"` — a repair instruction, not a failure. The `error`

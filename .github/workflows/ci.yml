@@ -44,3 +44,5 @@ jobs:
         run: bash tests/test_cli_version_gate.sh
       - name: Run pre-bash approval test
         run: bash tests/test_pre_bash_approval.sh
+      - name: Run MCP wiring test
+        run: bash tests/test_mcp_wiring.sh

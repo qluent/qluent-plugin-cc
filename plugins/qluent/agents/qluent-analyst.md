@@ -1,7 +1,7 @@
 ---
 name: qluent-analyst
 description: Proactively answer business and data questions through the query workflow by default, using advanced metric-tree investigation for explicit deterministic KPI movement, RCA, trend, or lever requests.
-tools: Bash
+tools: Bash, mcp__qluent__qluent_compose_catalog, mcp__qluent__qluent_compose_query
 skills:
   - qluent-interpretation
   - compose-authoring
@@ -44,8 +44,9 @@ questions use the query workflow. Only explicit deterministic KPI movement,
 RCA, trend, mix, or lever requests with a matching configured tree proceed to
 Step 1.
 
-For the default query workflow, probe `qluent plan --help`. When supported,
-run the compose path exactly as the `compose-authoring` skill prescribes it —
+For the default query workflow, use the plugin's MCP compose tools when they
+are in your tool list; otherwise probe `qluent plan --help`. Either way, run
+the compose path exactly as the `compose-authoring` skill prescribes it —
 that skill owns the catalog fetch, plan authoring, the `qluent plan`
 invocation, and the repair loop. Do not restate those commands here or invent
 a variant of your own.
