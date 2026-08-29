@@ -95,6 +95,7 @@ check_path 'viz-data.json' \
   'plugins/qluent/scripts/session-paths.sh' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
   'tests/test_analysis_run_handles.sh' \
+  'tests/test_pre_bash_approval.sh' \
   'tests/test_renderer_contract.sh' \
   'tests/test_session_paths.sh'
 
@@ -122,6 +123,7 @@ check_path 'query-result.json' \
   'plugins/qluent/commands/visualize.md' \
   'plugins/qluent/scripts/session-paths.sh' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_pre_bash_approval.sh' \
   'tests/test_query_contract.sh' \
   'tests/test_session_paths.sh'
 
@@ -132,12 +134,14 @@ check_path 'catalog.json' \
   'plugins/qluent/scripts/session-paths.sh' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_pre_bash_approval.sh' \
   'tests/test_session_paths.sh'
 
 check_path 'plan.json' \
   'plugins/qluent/scripts/session-paths.sh' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_pre_bash_approval.sh' \
   'tests/test_session_paths.sh'
 
 check_path 'plan-result.json' \
@@ -147,6 +151,7 @@ check_path 'plan-result.json' \
   'plugins/qluent/scripts/session-paths.sh' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_pre_bash_approval.sh' \
   'tests/test_query_contract.sh' \
   'tests/test_session_paths.sh'
 
