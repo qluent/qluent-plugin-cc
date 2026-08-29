@@ -111,10 +111,68 @@ Node vocabulary:
 EXCLUSIVE), `currency` (`eur`/`local`), `global_entity_id` / `country_name`
 (market scope).
 
+## Date windows: check the column first
+
+`params.date_range` does not filter "the date". It filters the source base's
+`date_column`, whatever that happens to be — and a base's `date_column` is
+frequently not the date the question means. `customer_order_summary` has
+`date_column: registration_date` while also carrying `order_date` and twelve
+order-shaped metrics, so "average revenue per customer in Q4" put through
+`params.date_range` compiles to
+
+```sql
+WHERE registration_date >= DATE '2025-10-01' AND registration_date < DATE '2026-01-01'
+```
+
+— revenue from customers who *registered* in Q4, not revenue *in* Q4. No
+error, no `plan_invalid`: just a different population, and a plausible number.
+
+**Omitting `params.date_range` is not the safe alternative.** With no range
+the compiler applies the base's `default_date_lookback_days` to the same
+`date_column`, so the window is still wrong and now also invisible.
+Omitting the range never means "all data".
+
+So, before writing any window:
+
+1. Read `bases[<base>].date_column` from the catalog (the projection above
+   keeps it) and decide whether it is the date the question is about.
+2. **It is** → put the window in `params.date_range` and stop. The compiler
+   applies it with partition pruning; a `filter_by` on the same column only
+   costs you that pruning.
+3. **It is not** → filter the intended column with explicit `filter_by`
+   nodes (`>=` start, `<` end — same half-open convention), *and* widen
+   `params.date_range` to a range that provably contains the intended window,
+   so the base's default lookback cannot silently narrow the result behind
+   your filters. Widening trades away partition pruning; keep it as tight as
+   the intended window's own bounds allow rather than reaching for an
+   arbitrarily early start date.
+4. Say which column carried the window when you present the answer. Under
+   `client_safe` the compiled SQL is redacted, so the plan is the only place
+   the reader can see it.
+
+```json
+{"nodes": [
+  {"op": "source", "id": "src", "base": "customer_order_summary"},
+  {"op": "filter_by", "id": "f0", "input": "src", "column": "order_date",
+   "operator": ">=", "value": "2025-10-01"},
+  {"op": "filter_by", "id": "f1", "input": "f0", "column": "order_date",
+   "operator": "<", "value": "2026-01-01"},
+  {"op": "aggregate", "id": "agg", "input": "f1",
+   "metrics": ["average_revenue_per_customer"]}
+], "output": "agg",
+ "params": {"date_range": {"start": "2020-01-01", "end": "2026-01-01"}}}
+```
+
+The same check applies to grouping: a time-grain derived dimension built from
+column A while `params.date_range` filters column B is almost always a
+mistake. Group by a grain of the column the window is on.
+
 ## Authoring rules
 
-1. **Date windows go in `params.date_range`**, never in a `filter_by` — the
-   compiler applies them to the base's date column with partition pruning.
+1. **Date windows follow the "check the column first" procedure above.**
+   `params.date_range` when the base's `date_column` is the date the question
+   means; explicit `filter_by` nodes plus a widened `date_range` when it is
+   not. Never assume; the catalog says which.
 2. **Set market scope in `params.global_entity_id`** when the question names a
    market or your access is market-scoped. A `PLAN_SCOPE_VIOLATION` error
    means exactly this.

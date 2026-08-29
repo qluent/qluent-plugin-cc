@@ -128,6 +128,17 @@ assert_contains "$COMPOSE_SKILL" 'date_column'
 assert_contains "$COMPOSE_SKILL" 'default_date_lookback_days'
 assert_contains "$COMPOSE_SKILL" 'scope_keys'
 
+# 3c. Date windows must be conditional on the base's date_column (#74). The
+#     old rule was unconditional -- "date windows go in params.date_range,
+#     never in a filter_by" -- which compiles a correct-looking plan against
+#     the wrong column whenever date_column is not the date the question
+#     means, with no error to notice.
+assert_not_contains "$COMPOSE_SKILL" 'never in a `filter_by`'
+assert_contains "$COMPOSE_SKILL" '## Date windows: check the column first'
+assert_contains "$COMPOSE_SKILL" 'not the date the question means'
+assert_contains "$COMPOSE_SKILL" 'Omitting `params.date_range` is not the safe alternative'
+assert_contains "$COMPOSE_SKILL" 'Omitting the range never means "all data"'
+
 # 4. Docs advertise the command; visualize declares the renderer boundary.
 assert_contains "$README" '/qluent:query'
 assert_contains "$PLUGIN_CLAUDE" '/qluent:query'
