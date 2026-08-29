@@ -88,39 +88,22 @@ remain on the query workflow.
 Skip this step when the compose capability probe failed, or when this is a
 follow-up on an existing NL-query thread (`--thread <id>` given).
 
-Fetch the query catalog once per session (reuse `/tmp/qluent-catalog.json` if
-it already exists):
+Run the compose path exactly as the `compose-authoring` skill prescribes it.
+The skill owns every command in this step — the catalog fetch and its
+projection, the coverage decision, plan authoring, the `qluent plan`
+invocation, and the `plan_invalid` repair loop. Follow it there; do not
+restate or re-derive those commands here, and do not substitute a variant of
+your own.
 
-```bash
-umask 077
-[ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
-jq '{bases: (.catalog.bases | map_values({columns})), metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions}' /tmp/qluent-catalog.json
-```
-
-If the catalog command reports the project has no query catalog, fall through
-to Step 4.
-
-Decide coverage: the question's relations, metrics, dimensions and filters
-must all map to catalog vocabulary (aliases count). If anything essential is
-missing, fall through to Step 4 and say which vocabulary was missing.
-
-Otherwise author the plan per the `compose-authoring` skill, `Write` it to
-`/tmp/qluent-plan.json`, and run:
-
-```bash
-set -o pipefail
-umask 077
-rm -f /tmp/qluent-plan-result.json
-qluent plan --file /tmp/qluent-plan.json --json-output | tee /tmp/qluent-plan-result.json >/dev/null
-jq '{status, error_code, error, row_count, grain}' /tmp/qluent-plan-result.json
-```
+This command owns only what happens to the outcome:
 
 - `status: "ok"` — present per Step 6 (composed-plan variant). Done; skip
   Steps 4-5.
-- `status: "plan_invalid"` — the `error` is a repair instruction: fix the plan
-  per the skill and re-run, at most 3 repair rounds. If the errors show the
-  catalog genuinely lacks the vocabulary, fall through to Step 4 and say so.
-- Anything else (hard error) — fall through to Step 4.
+- `status: "plan_invalid"` after the skill's repair rounds, or a catalog that
+  genuinely lacks the vocabulary — fall through to Step 4 and say which
+  vocabulary was missing.
+- Project has no query catalog, or any other hard error — fall through to
+  Step 4.
 
 ## Step 4: Run the NL query
 

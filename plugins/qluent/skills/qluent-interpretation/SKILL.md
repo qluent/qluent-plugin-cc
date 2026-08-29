@@ -307,9 +307,9 @@ updating that allowlist on purpose.
 
 ### `/tmp/qluent-catalog.json` — session query catalog
 - **Producer:** `scripts/session-start.sh` writes it at session start when the
-  CLI/backend support composed plans; otherwise the first
-  `qluent catalog --json-output` of the session (written by `/qluent:query` or
-  any agent following the `compose-authoring` skill).
+  CLI/backend support composed plans; otherwise the session's first catalog
+  fetch, issued by the `compose-authoring` skill — the single owner of that
+  invocation — on behalf of `/qluent:query` or an agent.
 - **Consumers:** plan authoring reads the vocabulary (`catalog.*`) and the
   QueryPlan JSON schema (`plan_schema`) from it instead of re-fetching.
 - **Schema:** the `qluent.catalog.v1` contract — `catalog` (bases, metrics,
@@ -317,8 +317,9 @@ updating that allowlist on purpose.
 
 ### `/tmp/qluent-plan.json` / `/tmp/qluent-plan-result.json` — composed plan round
 - **Producer:** plan authoring per the `compose-authoring` skill writes the
-  QueryPlan document to `/tmp/qluent-plan.json` and tees the `qluent plan`
+  QueryPlan document to `/tmp/qluent-plan.json` and redirects the `qluent plan`
   result to `/tmp/qluent-plan-result.json`; each repair round overwrites both.
+  That skill owns the exact invocations — no other file restates them.
 - **Consumers:** the repair loop reads `status`/`error`;
   `/qluent:visualize --file` reads the result for tabular charts the same way
   it reads query results.

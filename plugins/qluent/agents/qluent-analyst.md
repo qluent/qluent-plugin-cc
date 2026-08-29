@@ -45,28 +45,14 @@ RCA, trend, mix, or lever requests with a matching configured tree proceed to
 Step 1.
 
 For the default query workflow, probe `qluent plan --help`. When supported,
-reuse `/tmp/qluent-catalog.json` if present or fetch it with:
+run the compose path exactly as the `compose-authoring` skill prescribes it —
+that skill owns the catalog fetch, plan authoring, the `qluent plan`
+invocation, and the repair loop. Do not restate those commands here or invent
+a variant of your own.
 
-```bash
-umask 077
-[ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
-```
-
-Follow the `compose-authoring` skill. If the catalog covers every required
-base, metric, dimension, and filter, author `/tmp/qluent-plan.json` with a
-quoted heredoc, then run:
-
-```bash
-set -o pipefail
-umask 077
-rm -f /tmp/qluent-plan-result.json
-qluent plan --file /tmp/qluent-plan.json --json-output | tee /tmp/qluent-plan-result.json >/dev/null
-```
-
-Inspect `status`. On `plan_invalid`, repair the plan from the returned
-instruction and retry at most three rounds. On `ok`, answer from the rows,
-show the compiled SQL, respect `grain` and `metrics[*].summable`, label the
-provenance **composed query (deterministic)**, then stop.
+On `ok`, answer from the rows in `/tmp/qluent-plan-result.json`, show the
+compiled SQL, respect `grain` and `metrics[*].summable`, label the provenance
+**composed query (deterministic)**, then stop.
 
 Fall back to the NL path only when `qluent plan --help` is unavailable, the
 catalog lacks essential vocabulary, the node algebra cannot express the

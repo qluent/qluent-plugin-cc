@@ -17,13 +17,22 @@ agents should reference it by name rather than restating the rules.
 
 ## The catalog is the vocabulary
 
-Fetch it once per session and cache it:
+**This skill owns the exact invocations below.** Commands and agents run them
+from here and must not restate, re-derive, or "improve" them in their own
+files — a second copy is a second protocol.
+
+Fetch the catalog once per session and cache it. `scripts/session-start.sh`
+normally wrote it already, so the guard usually makes this a no-op:
 
 ```bash
 umask 077
-qluent catalog --json-output > /tmp/qluent-catalog.json
+[ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
 jq '{bases: (.catalog.bases | map_values({columns})), metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions, aliases: .catalog.column_aliases}' /tmp/qluent-catalog.json
 ```
+
+If the catalog command reports that the project has no query catalog, the
+compose path is unavailable for this project: say so and fall back to the NL
+`qluent query` workflow.
 
 Everything a plan references must come from this vocabulary:
 
@@ -100,13 +109,21 @@ EXCLUSIVE), `currency` (`eur`/`local`), `global_entity_id` / `country_name`
 
 ## The repair loop
 
-Write the plan to a private file and run:
+`Write` the plan document to `/tmp/qluent-plan.json`, then run — again, this
+is the canonical invocation, not one shape among several:
 
 ```bash
 umask 077
+rm -f /tmp/qluent-plan-result.json
 qluent plan --file /tmp/qluent-plan.json --json-output > /tmp/qluent-plan-result.json
-jq '{status, error_code, error}' /tmp/qluent-plan-result.json
+jq '{status, error_code, error, row_count, grain}' /tmp/qluent-plan-result.json
 ```
+
+`umask 077` plus `rm -f` recreate the result file private to the current user
+each round (results can carry warehouse rows and SQL) and clobber any stale
+file or symlink left at the fixed path. The plain redirect — not `| tee` —
+keeps `qluent`'s own exit status as the command's status, so a failed run
+cannot look successful.
 
 - `status: "ok"` — proceed to presentation.
 - `status: "plan_invalid"` — a repair instruction, not a failure. The `error`
