@@ -313,7 +313,12 @@ updating that allowlist on purpose.
 - **Consumers:** plan authoring reads the vocabulary (`catalog.*`) and the
   QueryPlan JSON schema (`plan_schema`) from it instead of re-fetching.
 - **Schema:** the `qluent.catalog.v1` contract — `catalog` (bases, metrics,
-  relationships, derived_dimensions, aliases) and `plan_schema`.
+  relationships, derived_dimensions, and the three alias maps) and
+  `plan_schema`, which sits beside `catalog` rather than inside it. Each base
+  carries date and scope metadata (`date_column`,
+  `default_date_lookback_days`, `scope_keys`, …) alongside its `columns`; the
+  `compose-authoring` skill's projection keeps all of it, because that
+  metadata decides which column a plan's date window lands on.
 
 ### `/tmp/qluent-plan.json` / `/tmp/qluent-plan-result.json` — composed plan round
 - **Producer:** plan authoring per the `compose-authoring` skill writes the

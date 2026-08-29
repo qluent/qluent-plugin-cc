@@ -103,6 +103,31 @@ assert_not_contains "$QUERY_CMD" 'qluent plan --file'
 assert_contains "$QUERY_CMD" 'compose-authoring'
 assert_contains "$SESSION_START" '/qluent:query'
 
+# 3b. The catalog projection must stay lossless (#73). `map_values({columns})`
+#     kept 1 of the 9 fields the backend emits per base, hiding `date_column`
+#     and `default_date_lookback_days` from the plan author — the vocabulary
+#     that decides which column `params.date_range` filters. `plan_schema`
+#     sits beside `catalog`, so a `.catalog.*`-only filter never reaches it.
+COMPOSE_SKILL="$ROOT/plugins/qluent/skills/compose-authoring/SKILL.md"
+assert_not_contains "$COMPOSE_SKILL" 'map_values({columns})'
+for projected in \
+  'bases: .catalog.bases' \
+  'metrics: .catalog.metrics' \
+  'relationships: .catalog.relationships' \
+  'derived_dimensions: .catalog.derived_dimensions' \
+  'column_aliases: .catalog.column_aliases' \
+  'value_aliases: .catalog.value_aliases' \
+  'derived_dimension_aliases: .catalog.derived_dimension_aliases' \
+  'plan_schema: .plan_schema'
+do
+  assert_contains "$COMPOSE_SKILL" "$projected"
+done
+# The metadata the projection exists to preserve is named in the vocabulary
+# list, so an author knows to look for it.
+assert_contains "$COMPOSE_SKILL" 'date_column'
+assert_contains "$COMPOSE_SKILL" 'default_date_lookback_days'
+assert_contains "$COMPOSE_SKILL" 'scope_keys'
+
 # 4. Docs advertise the command; visualize declares the renderer boundary.
 assert_contains "$README" '/qluent:query'
 assert_contains "$PLUGIN_CLAUDE" '/qluent:query'
