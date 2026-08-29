@@ -34,6 +34,38 @@ which qluent
 
 If installation fails or the user skips, stop here and report that qluent is not installed.
 
+## Step 1b: Check the CLI version
+
+Composed plans (`qluent plan` / `qluent catalog`) first shipped in CLI
+**0.1.18**. On anything older the whole compose path silently does not exist
+and every question falls through to the slower natural-language workflow —
+which is exactly what "it doesn't work and it's very slow" looks like from the
+outside. Report it rather than letting it go unnoticed:
+
+```bash
+qluent --version
+```
+
+Compare against the minimum declared in
+`${CLAUDE_PLUGIN_ROOT}/scripts/cli-requirements.sh`
+(`QLUENT_MIN_CLI_VERSION`, currently `0.1.18`).
+
+- **At or above the minimum** — note the version and continue.
+- **Below the minimum** — tell the user plainly, and continue with the rest of
+  the check (the NL workflow still works):
+
+  ```text
+  qluent CLI <found> detected; composed plans need 0.1.18+.
+  Run `npm install -g @qluent/cli` to upgrade.
+  ```
+
+- **`--version` fails or prints nothing recognizable** — the CLI is older than
+  the flag. Recommend the same upgrade and say the version could not be read.
+
+If the user upgrades and the version does not change, an older `qluent` is
+probably shadowing the new one on `PATH`: have them check `which -a qluent`
+(see qluent/qluent-cli#103).
+
 ## Step 2: Check the effective connection and capabilities
 
 ```bash
@@ -89,6 +121,8 @@ make users configure a metric tree before they can start querying.
 
 Present a summary:
 - Installation: installed / not installed
+- CLI version: <found> (minimum for composed plans: 0.1.18) — flag an upgrade
+  when below it
 - Connection: ready / login required
 - Querying: ready (default), including catalog coverage when available
 - Metric trees: N available, or "not configured (advanced, optional)"

@@ -109,15 +109,26 @@ if [ -n "$context" ]; then
 fi
 
 # Composed-plan capability probe (newer CLI + backend). Runs even when no
-# metric trees exist -- a catalog-only project still gets the plan path. Fails
-# silently on CLIs without `qluent plan`; a loadable catalog is cached at the
-# session path the compose-authoring skill expects, so later plan authoring
-# skips the re-fetch.
+# metric trees exist -- a catalog-only project still gets the plan path. A
+# loadable catalog is cached at the session path the compose-authoring skill
+# expects, so later plan authoring skips the re-fetch.
+#
+# The version gate comes first: below the minimum, `qluent plan` does not
+# exist, and a silent skip here is indistinguishable from a project without a
+# catalog. Say so once instead.
+# shellcheck source=./cli-requirements.sh
+. "$(dirname "${BASH_SOURCE[0]}")/cli-requirements.sh"
+
 compose_catalog=/tmp/qluent-catalog.json
 compose_context=""
 # The fixed path outlives a Claude session; never reuse another project's catalog.
 rm -f "$compose_catalog"
-if qluent plan --help &>/dev/null; then
+
+cli_version=$(qluent_cli_version || true)
+if [ -n "$cli_version" ] && ! qluent_version_at_least "$cli_version" "$QLUENT_MIN_CLI_VERSION"; then
+  echo ""
+  qluent_outdated_cli_notice "$cli_version"
+elif qluent plan --help &>/dev/null; then
   catalog_err=$(mktemp)
   if catalog_json=$(qluent catalog --json-output 2>"$catalog_err"); then
     (umask 077; printf '%s' "$catalog_json" > "$compose_catalog")

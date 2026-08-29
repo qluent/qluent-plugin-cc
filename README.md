@@ -12,6 +12,12 @@ npm install -g @qluent/cli
 qluent login
 ```
 
+Requires **qluent CLI 0.1.18 or newer** — that release added `qluent plan`
+and `qluent catalog`, which the plugin's deterministic composed-plan path is
+built on. On an older CLI every question falls back to the slower
+natural-language workflow; `/qluent:setup` reports the installed version and
+says so.
+
 Then add the plugin in Claude Code:
 
 ```
