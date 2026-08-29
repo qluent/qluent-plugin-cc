@@ -7,7 +7,6 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(qluent *)",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/pre-bash.sh\"",
             "timeout": 5
           }

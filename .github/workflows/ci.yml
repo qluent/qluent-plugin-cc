@@ -42,3 +42,5 @@ jobs:
         run: bash tests/test_query_contract.sh
       - name: Run CLI version gate test
         run: bash tests/test_cli_version_gate.sh
+      - name: Run pre-bash approval test
+        run: bash tests/test_pre_bash_approval.sh
