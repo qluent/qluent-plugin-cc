@@ -27,7 +27,7 @@ from partial output.
 
 ## Workflow
 
-Read the cached tree catalog at `/tmp/qluent-tree-capabilities.json`. If it is
+Read the cached tree catalog at `$QLUENT_DIR/tree-capabilities.json`. If it is
 absent, run `qluent trees list --json-output`. Match each requested dimension
 against `tree_id`'s declared dimensions.
 

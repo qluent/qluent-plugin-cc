@@ -20,7 +20,7 @@ Shapley/confidence interpretation, and the mix-vs-behavior distinction.
 - Exact `--current` / `--compare` windows. Reuse the windows from the upstream
   investigation; do not invent a new period.
 - Optional `companion_tree_id` — if provided, use it. Otherwise read the cached
-  tree catalog at `/tmp/qluent-tree-capabilities.json` and pick the closest
+  tree catalog at `$QLUENT_DIR/tree-capabilities.json` and pick the closest
   related tree by shared dimensions or root-metric family. If no candidate
   exists, say so and skip the compare leg.
 

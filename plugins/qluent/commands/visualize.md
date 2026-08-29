@@ -23,17 +23,17 @@ ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
 
 ## Step 1: Locate and validate the data
 
-By default, read from `/tmp/qluent-viz-data.json`. If the user provides `--file <path>`, use
+By default, read from `$QLUENT_DIR/viz-data.json`. If the user provides `--file <path>`, use
 that path instead. If the file doesn't exist or is empty, tell the user to run
 `/qluent:investigate` first.
 
-If `/tmp/qluent-deep-dive-bundle.json` exists and the user asks to visualize a
+If `$QLUENT_DIR/deep-dive-bundle.json` exists and the user asks to visualize a
 deep-dive or cross-tree result, use that file instead. Deep-dive bundles must be clean
 JSON with a bundle-level `trees[]` array; if validation fails, report the failing path
 and re-run command instead of hand-writing replacement HTML.
 
-**Tabular query results:** if the source is `/tmp/qluent-query-result.json`
-or `/tmp/qluent-plan-result.json` (via `--file`), or the payload carries
+**Tabular query results:** if the source is `$QLUENT_DIR/query-result.json`
+or `$QLUENT_DIR/plan-result.json` (via `--file`), or the payload carries
 `sql` plus `data` rows from either query engine, skip the report spec
 entirely and go straight to
 insight-driven HTML mode via the `dashboard-design` skill: the `RcaReportSpec`
@@ -80,17 +80,18 @@ HTML after the user explicitly asks for a local HTML dashboard, browser-only dem
 **Simple mode** (`--simple` flag or no investigation context): Use the generic render
 script for a quick local chart. This is a fallback for basic data or deliberate simple
 mode, not the synchronized RCA report artifact.
-Use a unique output path so stale `/tmp/qluent-viz.html` files do not collide with new runs:
+Use a unique output path so stale `$QLUENT_DIR/viz.html` files do not collide with new runs:
 
 ```bash
-out="/tmp/qluent-viz-$(date +%Y%m%d-%H%M%S).html"
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" /tmp/qluent-viz-data.json "$out"
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
+out="$QLUENT_DIR/viz-$(date +%Y%m%d-%H%M%S).html"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" "$QLUENT_DIR/viz-data.json" "$out"
 echo "Rendered Qluent report fallback: $out"
 ```
 
 **Insight-driven HTML mode** (`--html`, explicit dashboard/local/browser request, or
 unavailable UI contract): Compose custom HTML from the investigation data via the
-`dashboard-design` skill and write it to a unique `/tmp/qluent-viz-<timestamp>.html`
+`dashboard-design` skill and write it to a unique `$QLUENT_DIR/viz-<timestamp>.html`
 path. This mode should be specific to the produced analysis, not the generic renderer
 template. Drive every value, label, chart series, caveat, and recommendation from the
 qluent JSON; do not invent, infer, or hardcode chart values from conversation context.
@@ -199,7 +200,8 @@ ${CLAUDE_PLUGIN_ROOT}/skills/dashboard-design/SKILL.md
 Then write a unique output path:
 
 ```bash
-out="/tmp/qluent-viz-$(date +%Y%m%d-%H%M%S).html"
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
+out="$QLUENT_DIR/viz-$(date +%Y%m%d-%H%M%S).html"
 ```
 
 Compose sections using the skill's insight-to-section mapping and the chosen
@@ -227,8 +229,9 @@ Suggested single-tree section order (include only those the investigation suppor
 For `--simple`, run `render-charts.sh`; this is the deliberately generic fallback:
 
 ```bash
-out="/tmp/qluent-viz-$(date +%Y%m%d-%H%M%S).html"
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" /tmp/qluent-viz-data.json "$out"
+QLUENT_DIR=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/session-dir.sh") || exit 1
+out="$QLUENT_DIR/viz-$(date +%Y%m%d-%H%M%S).html"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-charts.sh" "$QLUENT_DIR/viz-data.json" "$out"
 echo "Rendered Qluent report fallback: $out"
 ```
 

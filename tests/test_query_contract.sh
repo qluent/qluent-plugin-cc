@@ -63,7 +63,7 @@ assert_output_not_contains() {
 assert_contains "$QUERY_CMD" 'qluent query --help'
 assert_contains "$QUERY_CMD" '--thread'
 assert_contains "$QUERY_CMD" 'AskUserQuestion'
-assert_contains "$QUERY_CMD" '--json-output | tee /tmp/qluent-query-result.json'
+assert_contains "$QUERY_CMD" '--json-output | tee "$QLUENT_DIR/query-result.json"'
 # Clean-stdout rule: stderr must not leak into the saved JSON.
 assert_not_contains "$QUERY_CMD" '2>&1 | tee'
 # Failure-preservation rule: without pipefail the pipeline exits with tee's
@@ -80,19 +80,23 @@ assert_contains "$ANALYST" "<<'QLUENT_QUERY'"
 assert_not_contains "$ANALYST" 'qluent query "<question>"'
 # Private-file rule: recreate the saved result 0600 and clobber stale files.
 assert_contains "$QUERY_CMD" 'umask 077'
-assert_contains "$QUERY_CMD" 'rm -f /tmp/qluent-query-result.json'
+# #78: a $QLUENT_DIR reference without the resolving prelude expands to the
+# filesystem root, so the two must always travel together.
+assert_contains "$QUERY_CMD" 'scripts/session-dir.sh'
+assert_contains "$ANALYST" 'scripts/session-dir.sh'
+assert_contains "$QUERY_CMD" 'rm -f "$QLUENT_DIR/query-result.json"'
 assert_contains "$ANALYST" 'umask 077'
 
 # 2. The skill owns the canonical routing rule and session-path declaration.
 assert_contains "$SKILL" '## Query-first routing'
 assert_contains "$SKILL" 'Query is the default workflow'
-assert_contains "$SKILL" '/tmp/qluent-query-result.json'
+assert_contains "$SKILL" '$QLUENT_DIR/query-result.json'
 
 # 3. Routing consumers point at the query path.
 assert_contains "$ANALYST" 'qluent query'
 assert_contains "$ANALYST" '  - compose-authoring'
 assert_contains "$ANALYST" 'qluent plan --help'
-assert_contains "$ANALYST" '/tmp/qluent-plan-result.json'
+assert_contains "$ANALYST" '$QLUENT_DIR/plan-result.json'
 assert_contains "$ANALYST" 'composed query (deterministic)'
 # #77: the compose invocations live in the compose-authoring skill only. Both
 # compose-path callers defer to it instead of carrying their own copy;
@@ -142,42 +146,24 @@ assert_contains "$COMPOSE_SKILL" 'Omitting the range never means "all data"'
 # 4. Docs advertise the command; visualize declares the renderer boundary.
 assert_contains "$README" '/qluent:query'
 assert_contains "$PLUGIN_CLAUDE" '/qluent:query'
-assert_contains "$VISUALIZE" '/tmp/qluent-plan-result.json'
+assert_contains "$VISUALIZE" '$QLUENT_DIR/plan-result.json'
 assert_contains "$VISUALIZE" 'composed query (deterministic)'
 assert_contains "$VISUALIZE" '`--simple` is unsupported for query payloads'
 
 # 5. Hook behavior against fixture payloads.
+# The rendezvous is scoped to $TMPDIR and the session id (#78), so pointing
+# both at a scratch directory isolates these fixtures from any real session.
 tmpdir="$(mktemp -d)"
-query_file="/tmp/qluent-query-result.json"
-viz_file="/tmp/qluent-viz-data.json"
-catalog_file="/tmp/qluent-catalog.json"
+trap 'rm -rf "$tmpdir"' EXIT
+export TMPDIR="$tmpdir"
+export CLAUDE_CODE_SESSION_ID="test-query-contract"
+# shellcheck source=../plugins/qluent/scripts/session-paths.sh
+. "$ROOT/plugins/qluent/scripts/session-paths.sh"
+qluent_ensure_session_dir || fail "could not create the test session directory"
 
-restore_tmp_files() {
-  rm -f "$query_file" "$viz_file"
-  if [ -f "$tmpdir/query-result.bak" ]; then
-    cp "$tmpdir/query-result.bak" "$query_file"
-  fi
-  if [ -f "$tmpdir/viz-data.bak" ]; then
-    cp "$tmpdir/viz-data.bak" "$viz_file"
-  fi
-  if [ -f "$tmpdir/catalog.bak" ]; then
-    cp "$tmpdir/catalog.bak" "$catalog_file"
-  else
-    rm -f "$catalog_file"
-  fi
-  rm -rf "$tmpdir"
-}
-
-if [ -f "$query_file" ]; then
-  cp "$query_file" "$tmpdir/query-result.bak"
-fi
-if [ -f "$viz_file" ]; then
-  cp "$viz_file" "$tmpdir/viz-data.bak"
-fi
-if [ -f "$catalog_file" ]; then
-  cp "$catalog_file" "$tmpdir/catalog.bak"
-fi
-trap restore_tmp_files EXIT
+query_file="$QLUENT_QUERY_RESULT_FILE"
+viz_file="$QLUENT_VIZ_DATA_FILE"
+catalog_file="$QLUENT_CATALOG_FILE"
 
 # 5a. A failed catalog probe must invalidate a cache from an earlier project.
 mkdir -p "$tmpdir/bin"
@@ -201,7 +187,7 @@ printf '{"catalog":{"bases":{"stale_project":{}}}}' > "$catalog_file"
 PATH="$tmpdir/bin:$PATH" bash "$SESSION_START" >/dev/null
 [ ! -e "$catalog_file" ] || fail "session start should remove a stale catalog when the current project catalog fails"
 
-QUERY_TOOL_INPUT='{"command":"qluent query \"top customers by refunds\" --json-output | tee /tmp/qluent-query-result.json"}'
+QUERY_TOOL_INPUT='{"command":"qluent query \"top customers by refunds\" --json-output | tee $QLUENT_DIR/query-result.json"}'
 
 # 5a. Successful result: surface the thread id, links, and visualize pointer.
 cat > "$query_file" <<'JSON'
@@ -217,7 +203,7 @@ out=$(TOOL_INPUT="$QUERY_TOOL_INPUT" bash "$HOOK")
 assert_output_contains "$out" 'Query thread: th_123'
 assert_output_contains "$out" '--thread th_123'
 assert_output_contains "$out" 'https://example.com/dl'
-assert_output_contains "$out" '/qluent:visualize --file /tmp/qluent-query-result.json'
+assert_output_contains "$out" "/qluent:visualize --file $query_file"
 
 # 5b. Pending clarification: nudge the loop instead of the follow-up hints.
 cat > "$query_file" <<'JSON'
@@ -236,7 +222,7 @@ assert_output_not_contains "$out" 'Query thread: th_456'
 # 5c. No saved payload: remind about the tee.
 rm -f "$query_file"
 out=$(TOOL_INPUT='{"command":"qluent query \"top customers\" --json-output"}' bash "$HOOK")
-assert_output_contains "$out" '| tee /tmp/qluent-query-result.json'
+assert_output_contains "$out" "| tee $query_file"
 
 # 5d. Question text containing tree keywords must not trigger tree guidance.
 out=$(TOOL_INPUT='{"command":"qluent query \"compare revenue trend by rca segment\" --json-output"}' bash "$HOOK")
@@ -247,6 +233,6 @@ assert_output_not_contains "$out" '/qluent:investigate'
 rm -f "$viz_file"
 out=$(TOOL_INPUT='{"command":"qluent trees investigate revenue --period \"last week\" --json-output"}' bash "$HOOK")
 assert_output_not_contains "$out" 'Query thread:'
-assert_output_not_contains "$out" '/tmp/qluent-query-result.json'
+assert_output_not_contains "$out" "$query_file"
 
 echo "query contract tests passed"
