@@ -27,8 +27,16 @@ normally wrote it already, so the guard usually makes this a no-op:
 ```bash
 umask 077
 [ -s /tmp/qluent-catalog.json ] || qluent catalog --json-output > /tmp/qluent-catalog.json
-jq '{bases: (.catalog.bases | map_values({columns})), metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions, aliases: .catalog.column_aliases}' /tmp/qluent-catalog.json
+jq '{bases: .catalog.bases, metrics: .catalog.metrics, relationships: .catalog.relationships, derived_dimensions: .catalog.derived_dimensions, column_aliases: .catalog.column_aliases, value_aliases: .catalog.value_aliases, derived_dimension_aliases: .catalog.derived_dimension_aliases, plan_schema: .plan_schema}' /tmp/qluent-catalog.json
 ```
+
+Project whole base objects — never narrow a base down to its `columns`. The
+per-base metadata below is small and it is the part that changes plan
+correctness —
+dropping it is how a plan silently filters the wrong date column. If the
+output really is unwieldy on a very wide catalog, reduce `columns` to
+`(.columns | length)` for the bases the question does not touch and keep
+every other field; never drop the metadata to save room.
 
 If the catalog command reports that the project has no query catalog, the
 compose path is unavailable for this project: say so and fall back to the NL
@@ -36,18 +44,32 @@ compose path is unavailable for this project: say so and fall back to the NL
 
 Everything a plan references must come from this vocabulary:
 
-- `catalog.bases` — the relations a `source` node may read, with their
-  columns, scope keys and date columns.
+- `catalog.bases` — the relations a `source` node may read. Each base carries
+  `columns` plus the metadata that decides what a plan actually computes:
+  - `date_column` — the column `params.date_range` filters. It differs per
+    base and is often *not* the date a question means; authoring rule 1
+    depends on checking it.
+  - `default_date_lookback_days` — the window applied to `date_column` when
+    a plan omits `params.date_range`. Omitting the range does not mean "all
+    data".
+  - `date_expr`, `date_range_variants` — how that date is expressed and
+    which alternative ranges the base accepts.
+  - `scope_keys`, `scope_variants`, `default_scope_variant`,
+    `scope_value_mappings` — the market/scope columns behind
+    `params.global_entity_id` / `country_name` and a
+    `PLAN_SCOPE_VIOLATION`.
 - `catalog.metrics` — metric name → the bases that can compute it. Pair each
   metric with a base from its own list; the compiler rejects mismatches.
 - `catalog.relationships` — the ONLY joins allowed. Each names its two bases,
   key columns, and cardinality.
 - `catalog.derived_dimensions` — computed dims (time buckets like
   `order_month`, segment buckets) usable directly in `group_by.dims`.
-- `catalog.column_aliases` / `value_aliases` — accepted alternative
-  spellings. When unsure of a value's exact spelling, prefer `contains`
-  filters over `=`.
-- `plan_schema` — the JSON schema the plan document must satisfy.
+- `catalog.column_aliases` / `catalog.value_aliases` /
+  `catalog.derived_dimension_aliases` — accepted alternative spellings. When
+  unsure of a value's exact spelling, prefer `contains` filters over `=`.
+- `plan_schema` — the JSON schema the plan document must satisfy. It sits
+  beside `catalog` in the payload, not inside it. Author against the schema;
+  the table below is a summary of it, not a substitute.
 
 ## Plan shape
 
