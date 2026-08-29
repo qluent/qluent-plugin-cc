@@ -113,6 +113,7 @@ check_path '/tmp/qluent-catalog.json' \
   'plugins/qluent/scripts/session-start.sh' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'tests/test_cli_version_gate.sh' \
   'tests/test_query_contract.sh' \
   'tests/test_session_paths.sh'
 
