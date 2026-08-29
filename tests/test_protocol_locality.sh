@@ -99,4 +99,52 @@ for cmd_file in "$ROOT"/plugins/qluent/commands/*.md; do
   assert_contains "$cmd_file" 'skills/qluent-interpretation/SKILL.md'
 done
 
+# 6. Compose-path invocations live only in the compose-authoring skill (#77).
+#    Two copies of one command are two protocols: the divergent jq projections
+#    in commands/query.md and compose-authoring/SKILL.md disagreed about what
+#    vocabulary the plan author gets to see. `scripts/session-start.sh` is the
+#    one other legitimate producer -- it caches the catalog before any command
+#    runs -- and the qluent-interpretation skill names the paths without
+#    prescribing the commands.
+COMPOSE_SKILL="$ROOT/plugins/qluent/skills/compose-authoring/SKILL.md"
+
+# invocation => the exact set of files allowed to spell it out. The skill owns
+# every one; session-start.sh additionally caches the catalog before any
+# command runs, which is why it produces the catalog fetch itself.
+check_invocation_locality() {
+  local invocation="$1"
+  shift
+  assert_contains "$COMPOSE_SKILL" "$invocation"
+
+  local expected
+  expected=$(printf '%s\n' "$@" | sort)
+  local actual
+  actual=$(grep -rlF --include='*.md' --include='*.sh' -e "$invocation" \
+      "$ROOT/plugins" 2>/dev/null \
+    | while read -r f; do echo "${f#$ROOT/}"; done \
+    | sort)
+
+  if [ "$actual" != "$expected" ]; then
+    echo "FAIL: '$invocation' is restated outside the compose-authoring skill" >&2
+    echo "  Expected:" >&2
+    printf '    %s\n' $expected >&2
+    echo "  Actual:" >&2
+    printf '    %s\n' $actual >&2
+    echo "  Reference the skill by name instead of restating its commands." >&2
+    exit 1
+  fi
+}
+
+check_invocation_locality 'qluent catalog --json-output' \
+  'plugins/qluent/skills/compose-authoring/SKILL.md' \
+  'plugins/qluent/scripts/session-start.sh'
+
+check_invocation_locality 'qluent plan --file' \
+  'plugins/qluent/skills/compose-authoring/SKILL.md'
+
+# 7. Callers of the compose path name the skill that owns it.
+for caller in "$ROOT/plugins/qluent/commands/query.md" "$ROOT/plugins/qluent/agents/qluent-analyst.md"; do
+  assert_contains "$caller" 'compose-authoring'
+done
+
 echo "protocol locality tests passed"

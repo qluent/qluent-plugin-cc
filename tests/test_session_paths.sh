@@ -106,9 +106,10 @@ check_path '/tmp/qluent-query-result.json' \
   'tests/test_query_contract.sh' \
   'tests/test_session_paths.sh'
 
+# The compose paths narrowed in #77: /qluent:query and qluent-analyst no
+# longer restate the catalog fetch or the plan run, so they no longer name the
+# input paths. They still read the *result* file when presenting an answer.
 check_path '/tmp/qluent-catalog.json' \
-  'plugins/qluent/agents/qluent-analyst.md' \
-  'plugins/qluent/commands/query.md' \
   'plugins/qluent/scripts/session-start.sh' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
@@ -116,8 +117,6 @@ check_path '/tmp/qluent-catalog.json' \
   'tests/test_session_paths.sh'
 
 check_path '/tmp/qluent-plan.json' \
-  'plugins/qluent/agents/qluent-analyst.md' \
-  'plugins/qluent/commands/query.md' \
   'plugins/qluent/skills/compose-authoring/SKILL.md' \
   'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
   'tests/test_session_paths.sh'

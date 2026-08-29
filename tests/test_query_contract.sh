@@ -92,9 +92,15 @@ assert_contains "$SKILL" '/tmp/qluent-query-result.json'
 assert_contains "$ANALYST" 'qluent query'
 assert_contains "$ANALYST" '  - compose-authoring'
 assert_contains "$ANALYST" 'qluent plan --help'
-assert_contains "$ANALYST" 'qluent catalog --json-output'
 assert_contains "$ANALYST" '/tmp/qluent-plan-result.json'
 assert_contains "$ANALYST" 'composed query (deterministic)'
+# #77: the compose invocations live in the compose-authoring skill only. Both
+# compose-path callers defer to it instead of carrying their own copy;
+# tests/test_protocol_locality.sh pins the allowlist.
+assert_not_contains "$ANALYST" 'qluent catalog --json-output'
+assert_not_contains "$QUERY_CMD" 'qluent catalog --json-output'
+assert_not_contains "$QUERY_CMD" 'qluent plan --file'
+assert_contains "$QUERY_CMD" 'compose-authoring'
 assert_contains "$SESSION_START" '/qluent:query'
 
 # 4. Docs advertise the command; visualize declares the renderer boundary.
