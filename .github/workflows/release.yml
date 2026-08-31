@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Tag release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # A tag that disagrees with the manifests would publish release notes for
+      # a version no user can ever be running.
+      - name: Verify the tag matches every manifest
+        run: node scripts/bump-version.mjs --check "${GITHUB_REF_NAME#v}"
+
+      - name: Verify the required CLI version is published
+        run: bash scripts/check-cli-floor.sh
+
+      - name: Run the full test suite
+        run: make test
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
