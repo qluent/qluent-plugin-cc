@@ -24,9 +24,9 @@ jobs:
         with:
           node-version: 22
 
-      # A tag that disagrees with the manifests would publish release notes for
-      # a version no user can ever be running.
-      - name: Verify the tag matches every manifest
+      # Pins the informational label to the tag, and fails if an
+      # update-gating `version` has reappeared in either manifest.
+      - name: Verify the version label matches the tag
         run: node scripts/bump-version.mjs --check "${GITHUB_REF_NAME#v}"
 
       - name: Verify the required CLI version is published
