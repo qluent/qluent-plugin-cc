@@ -105,31 +105,36 @@ MIT
 
 ## Contributing
 
+### How users get your changes
+
+Merging to `main` ships. Neither `plugin.json` nor the marketplace plugin entry
+declares a `version`, so Claude Code tracks this plugin by the resolved commit
+SHA and clients pick up new commits on their next session refresh, or on
+`/plugin marketplace update qluent-metric-trees`.
+
+This is deliberate. A declared `version` **pins** the plugin: push commits
+without bumping it and every user keeps the cached copy indefinitely. That is
+what happened between 0.4.3 and 0.5.0, where ten merged commits reached nobody
+for two months. `scripts/bump-version.mjs --check`, which CI runs on every PR,
+now fails if such a version reappears.
+
+If a change needs a newer `qluent` CLI, raise `QLUENT_MIN_CLI_VERSION` in the
+same PR and release the CLI first — `scripts/check-cli-floor.sh` enforces the
+ordering. Under merge-ships this is the only gate between a change and every
+user, so it matters more, not less.
+
 ### Cutting a release
 
-The plugin version is tracked in two manifest files:
-
-- `.claude-plugin/marketplace.json` (both `metadata.version` and the
-  `plugins[].version` for the `qluent` entry)
-- `plugins/qluent/.claude-plugin/plugin.json`
-
-The marketplace cache key includes the version string, so the version field
-**must** be bumped for clients to pick up new commits — leaving it unchanged
-makes `/plugin marketplace update` short-circuit with "already at latest".
-
-To bump every manifest at once:
+Releases are for the changelog and a pinnable reference; they do not gate
+updates. `metadata.version` in `.claude-plugin/marketplace.json` is an
+informational label recording what was last released — its worst failure is
+being stale.
 
 ```bash
-node scripts/bump-version.mjs 0.3.2
+make bump VERSION=0.6.0     # writes the label
+git commit -am "Release plugin 0.6.0"
+# PR, merge, pull main, then:
+make release VERSION=0.6.0  # verifies, tests, tags, cuts the GitHub release
 ```
 
-To verify all manifests share the same version (CI runs this on every PR):
-
-```bash
-node scripts/bump-version.mjs --check
-# or pin an expected value:
-node scripts/bump-version.mjs --check 0.3.2
-```
-
-Open a release PR with the bump commit, merge to `main`, and clients will pull
-the new version on their next `/plugin marketplace update qluent-metric-trees`.
+See [RELEASING.md](RELEASING.md) for the full flow.

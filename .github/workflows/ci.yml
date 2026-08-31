@@ -22,7 +22,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify version manifests are in sync
+      # Also fails if an update-gating `version` reappears in plugin.json or
+      # the marketplace entry, which would silently stop users receiving updates.
+      - name: Verify the version label
         run: make version-check
 
       # The plugin depends on the CLI, never the reverse. This fails the build

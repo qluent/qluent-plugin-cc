@@ -65,13 +65,26 @@ touches.
 
 ## Versioning
 
-Three fields must agree, all written by `scripts/bump-version.mjs`:
+Merging to `main` is what reaches users. Neither `plugin.json` nor the
+marketplace plugin entry declares a `version`, so Claude Code tracks this plugin
+by the resolved commit SHA.
 
-```text
-.claude-plugin/marketplace.json           metadata.version
-.claude-plugin/marketplace.json           plugins[qluent].version
-plugins/qluent/.claude-plugin/plugin.json version
-```
+That is a deliberate choice, not an oversight. A declared `version` pins the
+plugin: Claude Code serves the cached copy until the string changes, so
+forgetting to bump withholds every change from every user, silently. Between
+0.4.3 and 0.5.0 that swallowed ten commits for two months. The field was read by
+nothing else in this repo — it existed only to be remembered, and it was the one
+thing that had to be right for any of the work to matter.
+
+Two guards keep it that way:
+
+- `scripts/bump-version.mjs --check` fails if a `version` reappears in
+  `plugins/qluent/.claude-plugin/plugin.json` or in the marketplace plugin
+  entry. CI runs it on every PR and again at tag time.
+- `metadata.version` in `.claude-plugin/marketplace.json` is the one version
+  string kept. It is marketplace-level and informational: it records what was
+  last released and does not gate anything. `make release` pins it to the tag,
+  so it cannot drift when it matters.
 
 Bump the minor when commands, agents, skills or hooks change shape; the patch
 for fixes and prompt wording.
