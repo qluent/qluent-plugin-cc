@@ -43,6 +43,26 @@ make release VERSION=0.5.0     # verifies, tests, tags, pushes
 the manifests and the CLI floor, runs the full suite, and publishes the GitHub
 release with generated notes.
 
+## Rehearsing the release path
+
+`release.yml` only ever runs on a tag, so a change to it is first exercised
+during a real release unless you rehearse. A tag with a prerelease suffix is
+marked as a prerelease on GitHub and never displays as the latest release:
+
+```bash
+git checkout -b test/release-path
+node scripts/bump-version.mjs 0.5.1-rc1
+git commit -am "test: temporary rc bump"
+git tag -a v0.5.1-rc1 -m "rehearsal" && git push origin v0.5.1-rc1
+```
+
+Push only the tag, not the branch, so `main` keeps its version. Delete the tag,
+the prerelease and the branch once the run is green.
+
+Unlike the CLI there is nothing irreversible here — the plugin publishes no
+package, and marketplace users track `main`, which a prerelease tag never
+touches.
+
 ## Versioning
 
 Three fields must agree, all written by `scripts/bump-version.mjs`:

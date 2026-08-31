@@ -40,3 +40,9 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
+          # A tag carrying a prerelease suffix (v0.5.1-rc1) is marked as such,
+          # so it never displays as the repository's latest release. This job
+          # only ever runs on a tag, so a change to it is otherwise first
+          # exercised during a real release; a prerelease tag is how to
+          # rehearse it. Matches qluent-cli.
+          prerelease: ${{ contains(github.ref_name, '-') }}
