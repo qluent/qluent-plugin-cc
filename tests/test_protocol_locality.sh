@@ -29,7 +29,7 @@ assert_not_contains() {
 }
 
 # Files that must defer to the skill instead of restating it.
-CALLERS=("$ROOT/plugins/qluent/CLAUDE.md")
+CALLERS=("$ROOT/plugins/qluent/skills/qluent-orientation/SKILL.md")
 for caller in "$ROOT"/plugins/qluent/commands/*.md "$ROOT"/plugins/qluent/agents/*.md; do
   case "$(basename "$caller")" in
     setup.md) continue ;;

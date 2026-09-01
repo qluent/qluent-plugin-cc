@@ -3,7 +3,7 @@
 #
 # `qluent plan` and `qluent catalog` first shipped in CLI 0.1.18. Below that
 # the compose path does not exist, and the plugin used to skip it in silence
-# while the session banner and CLAUDE.md kept advertising composed plans as
+# while the session banner and the orientation skill kept advertising composed plans as
 # the default. These tests pin the single declaration, the surfaces that quote
 # it, the comparison itself, and the session-start behavior on each side of
 # the boundary.

@@ -1,7 +1,7 @@
 ---
 description: Check whether the qluent CLI is installed, configured, and ready to use
 argument-hint: ''
-allowed-tools: Bash(qluent *), Bash(which *), Bash(npx *), Bash(npm *), AskUserQuestion
+allowed-tools: Bash(qluent *), Bash(which *), Bash(npx *), Bash(npm *), Bash(bash *), AskUserQuestion
 ---
 
 # Qluent setup check
@@ -66,6 +66,28 @@ If the user upgrades and the version does not change, an older `qluent` is
 probably shadowing the new one on `PATH`: have them check `which -a qluent`
 (see qluent/qluent-cli#103).
 
+## Step 1c: Check the plugin version
+
+The plugin is tracked by commit SHA, so a months-old install and a fresh one
+look identical from inside a session — there is no version banner and nothing
+fails. The only symptom is behaviour that quietly predates every fix since.
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/plugin-version.sh"
+```
+
+Report whatever it prints. Its exit code says what happened:
+
+- **0** — up to date. Note the version and continue.
+- **1** — behind. Show the update commands it printed, and say the restart is
+  required: hooks and MCP servers are wired at session start, so an updated
+  plugin does nothing until Claude Code restarts.
+- **2** — undetermined (a local checkout rather than a marketplace install, or
+  the clone is unreadable). Say the check was skipped and continue; this is
+  normal when developing the plugin itself.
+
+Continue with the rest of the check either way — a stale plugin still works.
+
 ## Step 2: Check the effective connection and capabilities
 
 ```bash
@@ -123,6 +145,7 @@ Present a summary:
 - Installation: installed / not installed
 - CLI version: <found> (minimum for composed plans: 0.1.18) — flag an upgrade
   when below it
+- Plugin version: <found> — flag an update, and the required restart, if behind
 - Connection: ready / login required
 - Querying: ready (default), including catalog coverage when available
 - Metric trees: N available, or "not configured (advanced, optional)"

@@ -1,4 +1,10 @@
-# Qluent Metric Trees
+---
+name: qluent-orientation
+description: How the qluent plugin is organised and when to reach for each part — capabilities, command routing, the specialist agents, and what the session-start hook already provides. Load when the user mentions metrics, KPIs, revenue, conversion, business performance, or seems unsure what to ask.
+user-invocable: true
+---
+
+# Qluent orientation
 
 Business querying and deterministic KPI analysis from the command line.
 Querying is the default workflow; metric trees add advanced movement analysis.
