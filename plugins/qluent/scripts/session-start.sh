@@ -101,7 +101,7 @@ for t in trees:
         line += '  (' + ' | '.join(meta) + ')'
     print(line)
 print()
-print('Unsupported cuts: the post-bash hook surfaces the closest companion tree per the algorithm in the qluent-interpretation skill. Follow its suggestion and synthesize both views.')
+print('Unsupported cuts: the post-bash hook surfaces the closest companion tree per the algorithm in the qluent-tree-protocol skill. Follow its suggestion and synthesize both views.')
 print()
 print('Business-language routing hints: revenue/sales/GMV/AOV -> revenue; growth/users/acquisition/reactivation -> growth; delivery/late/failed/courier/ops quality -> operations; conversion/checkout/cart/traffic/payment -> conversion_funnel.')
 print('Query is the default route for general business and data questions: use /qluent:query, which tries a composed plan when the catalog covers the question and otherwise falls back to qluent query.')

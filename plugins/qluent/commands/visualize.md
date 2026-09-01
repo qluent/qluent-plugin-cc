@@ -11,14 +11,17 @@ for the Qluent UI. When deterministic RCA or elasticity output is available
 the report spec is the required primary artifact. Explicit local HTML/dashboard
 requests should produce an insight-driven dashboard from the analysis data.
 `--simple` remains the generic renderer fallback. Follow the
-`qluent-interpretation` skill for provenance and evidence labels.
+`qluent-interpretation` skill for provenance, and the `qluent-tree-protocol`
+skill for evidence labels and report precedence.
 
 ## Step 0: Load the canonical interpretation protocol
 
-Before shaping a report, `Read` the canonical interpretation Module:
+Before shaping a report, `Read` both protocol modules **in a single message** —
+two parallel `Read` calls, not two round trips:
 
 ```
 ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-tree-protocol/SKILL.md
 ```
 
 ## Step 1: Locate and validate the data

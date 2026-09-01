@@ -5,7 +5,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SKILL="$ROOT/plugins/qluent/skills/qluent-interpretation/SKILL.md"
+SKILL="$ROOT/plugins/qluent/skills/qluent-tree-protocol/SKILL.md"
 INVESTIGATE="$ROOT/plugins/qluent/commands/investigate.md"
 DEEP_DIVE="$ROOT/plugins/qluent/commands/deep-dive.md"
 VISUALIZE="$ROOT/plugins/qluent/commands/visualize.md"

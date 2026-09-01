@@ -16,7 +16,7 @@ what to ask, offer to help.
 
 The session-start hook (`scripts/session-start.sh`) is the canonical source for
 per-session orientation. It introspects available trees, writes the session
-tree catalog (see Session paths in the `qluent-interpretation` skill), and
+tree catalog (see Session paths in the `qluent-tree-protocol` skill), and
 injects:
 
 - the list of available trees with root metrics, sub-metric breakdowns, and segment dimensions
@@ -65,23 +65,26 @@ directly against the CLI.
 
 If an investigation returns `analysis_run_uuid`, treat that persisted
 AnalysisRun id as the durable handle for summaries, reports, and follow-up
-analysis. The detailed handle rules live in the `qluent-interpretation` skill.
+analysis. The detailed handle rules live in the `qluent-tree-protocol` skill.
 
 ## Protocol — see the qluent-interpretation skill
 
 All metric values, deltas, decompositions, segment rankings, elasticity
 estimates, and ranked recommendations must be grounded in deterministic qluent
-JSON. Tree resolution, window reuse, provenance citation, Shapley/confidence
-interpretation, elasticity guardrails, and the segment-cut fallback rule live
-in the `qluent-interpretation` skill. Read it before driving the CLI; do not
-restate or paraphrase its rules elsewhere. The tree-vs-ad-hoc-query routing
-rule also lives in that skill.
+JSON. The protocol comes in two modules. The `qluent-interpretation` skill is
+the core every workflow loads: the tree-vs-ad-hoc-query routing rule,
+provenance citation, grounding, and the session workspace. The
+`qluent-tree-protocol` skill carries the metric-tree half — tree resolution,
+window reuse, Shapley/confidence interpretation, elasticity guardrails, and
+the segment-cut fallback rule — and is loaded only by the tree commands and
+agents, so the query path never pays for it. Read them before driving the CLI;
+do not restate or paraphrase their rules elsewhere.
 
 ## Visualization and deep-dives
 
 Visualization precedence (`RcaReportSpec` first, HTML fallback) and
 cross-tree deep-dive synthesis are owned by `/qluent:visualize`,
-`/qluent:deep-dive`, and the `qluent-interpretation` skill. Follow them; do
+`/qluent:deep-dive`, and the `qluent-tree-protocol` skill. Follow them; do
 not restate their workflows here.
 
 Single-tree qluent analysis commands pipe stdout through `tee $QLUENT_DIR/viz-data.json`

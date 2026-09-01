@@ -2,7 +2,7 @@
 # Select the closest companion tree when the requested segment cuts are not
 # supported on the current tree. This is the single source of truth for the
 # unsupported-cut fallback ranking; the post-bash hook calls it to surface
-# nudges, and the skill (qluent-interpretation) names it as the canonical
+# nudges, and the skill (qluent-tree-protocol) names it as the canonical
 # implementation.
 #
 # Usage:

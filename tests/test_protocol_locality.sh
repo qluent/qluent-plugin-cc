@@ -1,13 +1,33 @@
 #!/usr/bin/env bash
 # Architectural fitness test for protocol locality.
-# Enforces the resolution of #45: the qluent-interpretation skill is the deep
-# module — protocol rules live there, not restated across commands and agents.
-# Callers reference the skill instead of paraphrasing it.
+# Enforces the resolution of #45: the protocol skills are the deep modules —
+# protocol rules live there, not restated across commands and agents. Callers
+# reference a skill instead of paraphrasing it.
+#
+# #102 split that deep module in two, by audience:
+#   qluent-interpretation  → the core every workflow loads (routing,
+#                            provenance, grounding, session workspace).
+#   qluent-tree-protocol   → the metric-tree half, loaded only by the tree
+#                            commands and agents. /qluent:query must not load
+#                            it: a "GMV by market last month" question never
+#                            touches Shapley, elasticity or tree resolution.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILL="$ROOT/plugins/qluent/skills/qluent-interpretation/SKILL.md"
+TREE_SKILL="$ROOT/plugins/qluent/skills/qluent-tree-protocol/SKILL.md"
+QUERY_CMD="$ROOT/plugins/qluent/commands/query.md"
+
+# Commands and agents that drive a metric tree, and so load both modules.
+TREE_CALLERS=(
+  "$ROOT/plugins/qluent/commands/investigate.md"
+  "$ROOT/plugins/qluent/commands/deep-dive.md"
+  "$ROOT/plugins/qluent/commands/visualize.md"
+)
+for agent_file in "$ROOT"/plugins/qluent/agents/*.md; do
+  TREE_CALLERS+=("$agent_file")
+done
 
 fail() {
   echo "FAIL: $*" >&2
@@ -37,21 +57,26 @@ for caller in "$ROOT"/plugins/qluent/commands/*.md "$ROOT"/plugins/qluent/agents
   CALLERS+=("$caller")
 done
 
-# Canonical phrases that must live ONLY in the skill. Each phrase is the
-# distinctive wording of a protocol rule the skill owns.
-SKILL_ONLY_PHRASES=(
-  'Reuse the exact'
+# Canonical phrases that must live ONLY in the core skill. Each phrase is the
+# distinctive wording of a protocol rule that skill owns.
+CORE_ONLY_PHRASES=(
   'Always use `--json-output`'
   'Never parse tool-result temp files'
   'back-calculate'
-  'cooperative game theory'
   'Do not rerun both JSON and non-JSON'
-  'Confidence scores are evidence-coverage heuristics'
   'Do not require a tree before answering a data question'
 )
 
-# Evidence-label list: the four-label vocabulary belongs in the skill. Callers
-# reference the skill — they do not enumerate the labels themselves.
+# The same, for the metric-tree module.
+TREE_ONLY_PHRASES=(
+  'Reuse the exact'
+  'cooperative game theory'
+  'Confidence scores are evidence-coverage heuristics'
+)
+
+# Evidence-label list: the four-label vocabulary is tree-lever material and
+# belongs in the tree module. Callers reference it — they do not enumerate the
+# labels themselves.
 EVIDENCE_LABELS=(
   'observed_correlation'
   'historical_elasticity'
@@ -59,17 +84,24 @@ EVIDENCE_LABELS=(
   'experiment_backed'
 )
 
-# 1. Skill carries every canonical phrase.
-for phrase in "${SKILL_ONLY_PHRASES[@]}"; do
+# 1. Each skill carries its own canonical phrases, and neither carries the
+#    other's — a phrase in both files is one rule with two homes.
+for phrase in "${CORE_ONLY_PHRASES[@]}"; do
   assert_contains "$SKILL" "$phrase"
+  assert_not_contains "$TREE_SKILL" "$phrase"
+done
+for phrase in "${TREE_ONLY_PHRASES[@]}"; do
+  assert_contains "$TREE_SKILL" "$phrase"
+  assert_not_contains "$SKILL" "$phrase"
 done
 for label in "${EVIDENCE_LABELS[@]}"; do
-  assert_contains "$SKILL" "$label"
+  assert_contains "$TREE_SKILL" "$label"
+  assert_not_contains "$SKILL" "$label"
 done
 
 # 2. No caller restates a canonical phrase.
 for caller in "${CALLERS[@]}"; do
-  for phrase in "${SKILL_ONLY_PHRASES[@]}"; do
+  for phrase in "${CORE_ONLY_PHRASES[@]}" "${TREE_ONLY_PHRASES[@]}"; do
     assert_not_contains "$caller" "$phrase"
   done
   for label in "${EVIDENCE_LABELS[@]}"; do
@@ -77,17 +109,24 @@ for caller in "${CALLERS[@]}"; do
   done
 done
 
-# 3. Every caller names the skill so the pointer is real.
+# 3. Every caller names the core skill, and every tree caller also names the
+#    tree module, so each pointer is real.
 for caller in "${CALLERS[@]}"; do
   assert_contains "$caller" 'qluent-interpretation'
 done
+for caller in "${TREE_CALLERS[@]}"; do
+  assert_contains "$caller" 'qluent-tree-protocol'
+done
 
-# 4. Agents declare the load contract via frontmatter (#32 seam).
+# 4. Agents declare the load contract via frontmatter (#32 seam). Every agent
+#    drives a tree, so every agent declares both modules.
 for agent_file in "$ROOT"/plugins/qluent/agents/*.md; do
   # Crude but sufficient: the frontmatter line must appear.
-  if ! grep -E '^[[:space:]]*-[[:space:]]+qluent-interpretation[[:space:]]*$' "$agent_file" >/dev/null; then
-    fail "$agent_file frontmatter must list qluent-interpretation under skills:"
-  fi
+  for skill_name in qluent-interpretation qluent-tree-protocol; do
+    if ! grep -E "^[[:space:]]*-[[:space:]]+$skill_name[[:space:]]*\$" "$agent_file" >/dev/null; then
+      fail "$agent_file frontmatter must list $skill_name under skills:"
+    fi
+  done
 done
 
 # 5. Slash commands declare the load contract via Step 0 Read (#32 seam).
@@ -98,6 +137,16 @@ for cmd_file in "$ROOT"/plugins/qluent/commands/*.md; do
   esac
   assert_contains "$cmd_file" 'skills/qluent-interpretation/SKILL.md'
 done
+
+# 5b. The tree commands load the tree module; /qluent:query must not (#102).
+#     This is the whole point of the split: the query path stops paying for
+#     tree protocol it never reads.
+for cmd_file in "$ROOT"/plugins/qluent/commands/investigate.md \
+                "$ROOT"/plugins/qluent/commands/deep-dive.md \
+                "$ROOT"/plugins/qluent/commands/visualize.md; do
+  assert_contains "$cmd_file" 'skills/qluent-tree-protocol/SKILL.md'
+done
+assert_not_contains "$QUERY_CMD" 'skills/qluent-tree-protocol/SKILL.md'
 
 # 6. Compose-path invocations live only in the compose-authoring skill (#77).
 #    Two copies of one command are two protocols: the divergent jq projections

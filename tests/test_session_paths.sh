@@ -6,14 +6,17 @@
 # consumer?") and of #78 (the rendezvous is scoped to one user and one Claude
 # session instead of being global to the machine).
 #
-# The qluent-interpretation skill is the single canonical declaration;
-# scripts/session-paths.sh is its executable counterpart. Every other entry in
-# each list is a real producer, consumer, or test fixture.
+# Each rendezvous file is declared exactly once, in the protocol module whose
+# readers use it (#102): the workspace itself and the query-path files in
+# qluent-interpretation, the tree-path files in qluent-tree-protocol.
+# scripts/session-paths.sh is the executable counterpart of both. Every other
+# entry in each list is a real producer, consumer, or test fixture.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILL="$ROOT/plugins/qluent/skills/qluent-interpretation/SKILL.md"
+TREE_SKILL="$ROOT/plugins/qluent/skills/qluent-tree-protocol/SKILL.md"
 SESSION_PATHS="$ROOT/plugins/qluent/scripts/session-paths.sh"
 SESSION_DIR_SCRIPT="$ROOT/plugins/qluent/scripts/session-dir.sh"
 
@@ -56,21 +59,25 @@ check_path() {
     printf '    %s\n' $actual >&2
     echo "  If you intentionally added or removed a reference, update the" >&2
     echo "  allowlist in tests/test_session_paths.sh and the Session paths" >&2
-    echo "  section in qluent-interpretation/SKILL.md." >&2
+    echo "  section in qluent-interpretation/ or qluent-tree-protocol/." >&2
     exit 1
   fi
 }
 
-# 1. The skill carries the canonical declaration, including the workspace
-#    itself and the prelude that resolves it.
+# 1. The core skill carries the workspace itself, the prelude that resolves
+#    it, and the query-path files; the tree module carries the tree-path
+#    files. Neither declares the other's, so nobody loads a file description
+#    they will not use.
 assert_contains "$SKILL" '## Session paths'
 assert_contains "$SKILL" '$QLUENT_DIR'
 assert_contains "$SKILL" 'scripts/session-dir.sh'
 assert_contains "$SKILL" 'qluent-$UID-$CLAUDE_CODE_SESSION_ID'
-assert_contains "$SKILL" '$QLUENT_DIR/viz-data.json'
-assert_contains "$SKILL" '$QLUENT_DIR/deep-dive-bundle.json'
-assert_contains "$SKILL" '$QLUENT_DIR/tree-capabilities.json'
 assert_contains "$SKILL" '$QLUENT_DIR/query-result.json'
+assert_contains "$SKILL" '$QLUENT_DIR/plan-result.json'
+
+assert_contains "$TREE_SKILL" '$QLUENT_DIR/viz-data.json'
+assert_contains "$TREE_SKILL" '$QLUENT_DIR/deep-dive-bundle.json'
+assert_contains "$TREE_SKILL" '$QLUENT_DIR/tree-capabilities.json'
 
 # 2. No fixed machine-global rendezvous path may come back (#78). This is the
 #    regression guard: such a path is shared across sessions, projects and
@@ -93,7 +100,7 @@ check_path 'viz-data.json' \
   'plugins/qluent/commands/investigate.md' \
   'plugins/qluent/commands/visualize.md' \
   'plugins/qluent/scripts/session-paths.sh' \
-  'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'plugins/qluent/skills/qluent-tree-protocol/SKILL.md' \
   'tests/test_analysis_run_handles.sh' \
   'tests/test_pre_bash_approval.sh' \
   'tests/test_renderer_contract.sh' \
@@ -105,7 +112,7 @@ check_path 'deep-dive-bundle.json' \
   'plugins/qluent/commands/visualize.md' \
   'plugins/qluent/scripts/render-charts.sh' \
   'plugins/qluent/scripts/session-paths.sh' \
-  'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'plugins/qluent/skills/qluent-tree-protocol/SKILL.md' \
   'tests/test_analysis_run_handles.sh' \
   'tests/test_renderer_contract.sh' \
   'tests/test_session_paths.sh'
@@ -114,7 +121,7 @@ check_path 'tree-capabilities.json' \
   'plugins/qluent/agents/rca-validator.md' \
   'plugins/qluent/agents/segment-explorer.md' \
   'plugins/qluent/scripts/session-paths.sh' \
-  'plugins/qluent/skills/qluent-interpretation/SKILL.md' \
+  'plugins/qluent/skills/qluent-tree-protocol/SKILL.md' \
   'tests/test_session_paths.sh'
 
 check_path 'query-result.json' \

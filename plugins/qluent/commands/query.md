@@ -30,11 +30,18 @@ ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
 ${CLAUDE_PLUGIN_ROOT}/skills/compose-authoring/SKILL.md
 ```
 
-The first owns the tree-vs-plan-vs-query decision rule ("Query-first routing")
-and the provenance rules for presenting results; the second owns plan
-authoring. Load them together rather than waiting to see whether the compose
-path is available — it usually is, and a second sequential read costs more
-than the occasional wasted one.
+The first owns the tree-vs-plan-vs-query decision rule ("Query-first routing"),
+the provenance rules for presenting results, and the session workspace; the
+second owns plan authoring. Load them together rather than waiting to see
+whether the compose path is available — it usually is, and a second sequential
+read costs more than the occasional wasted one.
+
+Do **not** load `qluent-tree-protocol`. Tree resolution, Shapley, elasticity
+guardrails, window reuse and the companion-tree fallback belong to the
+investigation workflow; a question this command answers never reaches them, and
+loading them here costs roughly 3k tokens per session for material that goes
+unused. If the routing check in Step 2 sends the question to
+`/qluent:investigate`, that command loads the tree protocol itself.
 
 ## Step 1: Read capability off the session banner — do not re-probe
 

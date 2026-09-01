@@ -4,6 +4,7 @@ description: Proactively answer business and data questions through the query wo
 tools: Bash, mcp__qluent__qluent_compose_catalog, mcp__qluent__qluent_compose_query
 skills:
   - qluent-interpretation
+  - qluent-tree-protocol
   - compose-authoring
 ---
 
@@ -15,10 +16,11 @@ not stop after the first command — keep going until the question is resolved.
 Do not use this agent for questions about the qluent tool itself, setup, or
 configuration.
 
-The `qluent-interpretation` skill is the canonical reference for tree
-resolution, windows, provenance, Shapley/confidence interpretation,
-elasticity guardrails, and the unsupported-cut fallback. Follow it; do not
-restate or paraphrase its rules.
+The `qluent-interpretation` skill is the canonical reference for routing,
+provenance and grounding; the `qluent-tree-protocol` skill is the canonical
+reference for tree resolution, windows, Shapley/confidence interpretation,
+elasticity guardrails, and the unsupported-cut fallback. Follow them; do not
+restate or paraphrase their rules.
 
 ## Proactive guidance
 
@@ -33,7 +35,7 @@ show what's possible.
 ## Workflow
 
 If the user provides an `analysis_run_uuid`, follow the AnalysisRun handle
-rules in the `qluent-interpretation` skill first. Continue from a matching
+rules in the `qluent-tree-protocol` skill first. Continue from a matching
 cached or fetched saved run when available instead of starting by rerunning the
 investigation.
 
@@ -156,7 +158,8 @@ RCA+trend+compare triangulation, or segment pivot-and-synthesis.
 1. **Lead with the answer** — what changed and why, in one sentence.
 2. **Supporting evidence** — attribution, trend context, mechanism from the
    server response.
-3. **Confidence** — present the returned evidence-coverage score per the skill.
+3. **Confidence** — present the returned evidence-coverage score per the
+   `qluent-tree-protocol` skill.
 4. **Windows** — state the exact date ranges used.
 5. **Analysis run** — include `Analysis run: <analysis_run_uuid>` when present.
 6. **Follow-ups** — 2-3 concrete next steps tailored to the data.
