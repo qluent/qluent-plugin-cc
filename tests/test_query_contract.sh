@@ -57,19 +57,30 @@ assert_output_not_contains() {
   esac
 }
 
-# 1. The command exists and owns the capability guard, clarification loop,
+# 1. The command exists and owns the review checklist, clarification loop,
 #    and session-path tee.
 [ -f "$QUERY_CMD" ] || fail "commands/query.md is missing"
-# #76: capability comes off the session banner, which session-start.sh already
-# established. A re-probe costs a call, several seconds and a permission
-# prompt to learn something already in context -- so the command must read the
-# banner, and probe only when no banner ran.
-assert_contains "$QUERY_CMD" 'do not re-probe'
-assert_contains "$QUERY_CMD" 'Query catalog available'
-assert_contains "$QUERY_CMD" 'no** qluent banner in this session at all'
-assert_contains "$QUERY_CMD" 'qluent --version || true'
-assert_contains "$QUERY_CMD" 'qluent plan --help'
-assert_not_contains "$QUERY_CMD" 'qluent --version && qluent plan --help'
+# #100: `qluent query` returns the plan that produced the rows, so the command
+# reviews rather than authors. The capability table, the coverage decision and
+# the client-side probe are gone: there is one engine now, and a CLI that
+# cannot run it reports that through its own non-zero exit, which Step 2
+# already handles.
+assert_not_contains "$QUERY_CMD" 'Query catalog available'
+assert_not_contains "$QUERY_CMD" 'qluent plan --help'
+assert_not_contains "$QUERY_CMD" 'qluent --version'
+assert_not_contains "$QUERY_CMD" 'do not re-probe'
+# The review checklist is what replaced them. Each item exists because the
+# returned payload makes a specific old failure visible.
+assert_contains "$QUERY_CMD" '## Step 4: Review the returned plan'
+assert_contains "$QUERY_CMD" 'Which column did the date window land on?'
+assert_contains "$QUERY_CMD" 'Did any filter return zero rows?'
+assert_contains "$QUERY_CMD" 'Does the plan answer the question actually asked?'
+# Composition safety is the permanent residue -- analysis, not extraction --
+# and survives every engine change.
+assert_contains "$QUERY_CMD" 'metrics[*].summable'
+assert_contains "$QUERY_CMD" 'not tree evidence'
+# A payload without a plan must not silently become an unreviewed answer.
+assert_contains "$QUERY_CMD" 'no plan at all'
 assert_contains "$QUERY_CMD" '--thread'
 assert_contains "$QUERY_CMD" 'AskUserQuestion'
 assert_contains "$QUERY_CMD" '--json-output | tee "$QLUENT_DIR/query-result.json"'

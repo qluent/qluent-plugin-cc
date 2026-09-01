@@ -5,7 +5,10 @@
 #
 #   README.md                          → users: install, quickstart, commands, release.
 #   .../skills/qluent-orientation/     → agents: proactive guidance + pointers.
-#   .../skills/qluent-interpretation/  → protocol: rules, conventions, algorithms.
+#   .../skills/qluent-interpretation/  → protocol core: routing, provenance,
+#                                        grounding, the session workspace.
+#   .../skills/qluent-tree-protocol/   → protocol, metric-tree half: resolution,
+#                                        windows, Shapley, elasticity, fallback.
 
 set -euo pipefail
 

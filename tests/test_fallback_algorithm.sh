@@ -2,15 +2,16 @@
 # Architectural fitness + behavior tests for the unsupported-cut fallback
 # algorithm. Enforces the resolution of #47:
 #   1. The ranking lives in exactly one place: scripts/select-fallback-tree.sh.
-#   2. The skill names the algorithm; callers (post-bash hook, segment-explorer
-#      agent, orientation skill, session-start) defer to it instead of restating it.
+#   2. The qluent-tree-protocol skill names the algorithm; callers (post-bash
+#      hook, segment-explorer agent, orientation skill, session-start) defer to
+#      it instead of restating it.
 #   3. Behavior tests pin the ranking decisions against synthetic catalogs.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$ROOT/plugins/qluent/scripts/select-fallback-tree.sh"
-SKILL="$ROOT/plugins/qluent/skills/qluent-interpretation/SKILL.md"
+SKILL="$ROOT/plugins/qluent/skills/qluent-tree-protocol/SKILL.md"
 HOOK="$ROOT/plugins/qluent/scripts/post-bash.sh"
 AGENT="$ROOT/plugins/qluent/agents/segment-explorer.md"
 

@@ -9,22 +9,28 @@ allowed-tools: Bash(qluent *), Read
 Advanced deterministic entry point for KPI movement analysis. Bundles
 validation, trend, evaluation, and root cause analysis in one call.
 
-Follow the `qluent-interpretation` skill for tree resolution, window handling,
-provenance, Shapley/confidence interpretation, elasticity guardrails, and the
+Follow the `qluent-interpretation` skill for routing, provenance, and
+grounding, and the `qluent-tree-protocol` skill for tree resolution, window
+handling, Shapley/confidence interpretation, elasticity guardrails, and the
 unsupported-cut fallback. Do not invent metric math.
 
 ## Step 0: Load the canonical interpretation protocol
 
-Before proceeding, `Read` the canonical interpretation Module:
+Before proceeding, `Read` both protocol modules **in a single message** — two
+parallel `Read` calls, not two round trips:
 
 ```
 ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-tree-protocol/SKILL.md
 ```
+
+The first owns routing, provenance labels and the session workspace; the
+second owns everything specific to a metric tree.
 
 ## Step 1: Question vs tree id
 
 If `$ARGUMENTS` contains an existing `analysis_run_uuid`, follow the
-AnalysisRun handle rules in the `qluent-interpretation` skill before running a
+AnalysisRun handle rules in the `qluent-tree-protocol` skill before running a
 new investigation. Prefer a matching cached or fetched saved run when
 available.
 
@@ -36,7 +42,7 @@ and resolve a tree (Step 2). If it is a single token (`revenue`, `roas`,
 ## Step 2: Resolve a tree
 
 Run `qluent trees list --json-output` and pick the best fit per the tree
-resolution rules in the `qluent-interpretation` skill.
+resolution rules in the `qluent-tree-protocol` skill.
 
 If the project has zero trees, stop and explain:
 

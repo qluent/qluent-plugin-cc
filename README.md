@@ -47,7 +47,7 @@ Or use slash commands directly:
 
 | Command | What it does |
 |---|---|
-| `/qluent:query` | Default workflow for business and data questions; deterministic composed plan when catalog-covered, NL-to-SQL fallback otherwise |
+| `/qluent:query` | Default workflow for business and data questions; the backend builds and runs the query, the agent reviews the returned plan |
 | `/qluent:deep-dive` | Cross-tree executive narrative across all configured metric trees |
 | `/qluent:investigate` | Advanced deterministic analysis: validation, trend, evaluation, and RCA |
 | `/qluent:visualize` | Shape the latest analysis into an `RcaReportSpec` (or local HTML fallback) |
@@ -84,12 +84,14 @@ including the synthesis shape and per-tree caveat handling.
 
 ## Query-first workflow
 
-`/qluent:query <question>` is the default entry point. It first uses the
-project catalog to compose a deterministic QueryPlan when coverage is
-complete, then falls back to the backend's natural-language-to-SQL workflow.
-The fallback can take a few minutes and may ask a clarifying question.
-Metric trees remain available as the advanced workflow for governed movement
-analysis and RCA. Follow-ups on NL queries continue via the returned thread:
+`/qluent:query <question>` is the default entry point. The backend resolves
+real values, drafts the query, compiles it and runs it, and returns the plan
+that produced the rows; the agent checks that plan against the question you
+actually asked — which column the date window landed on, whether a filter
+matched nothing — and explains the numbers. A run can take a few minutes and
+may ask a clarifying question. Metric trees remain available as the advanced
+workflow for governed movement analysis and RCA. Follow-ups continue via the
+returned thread:
 
 ```bash
 /qluent:query which restaurants had the most failed deliveries last week?

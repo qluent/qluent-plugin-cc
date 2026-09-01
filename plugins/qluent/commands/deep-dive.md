@@ -13,19 +13,22 @@ other configured trees.
 Opt-in and potentially expensive: runs investigations across all trees in
 parallel through the deterministic qluent CLI. Do not run from SessionStart
 or as an implicit first step. Follow the `qluent-interpretation` skill for
-provenance, window handling, and quantitative-claim rules.
+provenance and quantitative-claim rules, and the `qluent-tree-protocol` skill
+for window handling.
 
 ## Step 0: Load the canonical interpretation protocol
 
-Before running the deep dive, `Read` the canonical interpretation Module:
+Before running the deep dive, `Read` both protocol modules **in a single
+message** — two parallel `Read` calls, not two round trips:
 
 ```
 ${CLAUDE_PLUGIN_ROOT}/skills/qluent-interpretation/SKILL.md
+${CLAUDE_PLUGIN_ROOT}/skills/qluent-tree-protocol/SKILL.md
 ```
 
-It is the single source of truth for the deterministic-query protocol, evidence labels,
-elasticity guardrails, and unsupported-cut fallback. The cross-tree synthesis steps below
-sit on top of that contract.
+Together they are the single source of truth for the deterministic-query
+protocol, evidence labels, elasticity guardrails, and unsupported-cut
+fallback. The cross-tree synthesis steps below sit on top of that contract.
 
 ## Step 1: Check CLI availability and capability
 
