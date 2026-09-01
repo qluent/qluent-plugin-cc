@@ -27,7 +27,8 @@
 #   qluent <args> | tee "$QLUENT_DIR/<name>.json"[ >/dev/null]
 #   [ -s "$QLUENT_DIR/<name>.json" ] || qluent <args> > "$QLUENT_DIR/<name>.json"
 #   jq '<filter>' "$QLUENT_DIR/<name>.json"
-#   cat > "$QLUENT_DIR/<name>.json" <<'DELIM' ... DELIM
+#   echo <inert text>
+#   [command ]cat > "$QLUENT_DIR/<name>.json" <<'DELIM' ... DELIM
 #   question=$(command cat <<'QLUENT_QUERY' ... QLUENT_QUERY )
 #   answer=$(command cat <<'QLUENT_ANSWER' ... QLUENT_ANSWER )
 #
@@ -153,6 +154,14 @@ while [ "$index" -lt "$total" ]; do
     continue
   fi
 
+  # `echo ...` -- an inert section header printed between prescribed steps, so
+  # a multi-step catalog read stays readable. Gated by the same inertness check
+  # as a qluent argument region: no expansion and no separator can ride in, and
+  # an echo on its own never counts as qluent work.
+  if [ "${line:0:5}" = "echo " ] && args_are_inert "$line"; then
+    continue
+  fi
+
   if [[ "$line" =~ ^rm\ -f\ $SESSION_FILE$ ]]; then
     continue
   fi
@@ -182,9 +191,12 @@ while [ "$index" -lt "$total" ]; do
     continue
   fi
 
-  # `cat > <file> <<'DELIM'`: the plan document, written as inert data.
-  if [[ "$line" =~ ^cat\ \>\ $SESSION_FILE\ \<\<\'([A-Z_]+)\'$ ]]; then
-    delimiter="${BASH_REMATCH[1]}"
+  # `cat > <file> <<'DELIM'`: the plan document, written as inert data. The
+  # optional `command ` prefix is the alias-proof spelling -- the model reaches
+  # for it once a shell alias has made bare `cat` fail -- and is the same
+  # operation with alias and function lookup suppressed.
+  if [[ "$line" =~ ^(command\ )?cat\ \>\ $SESSION_FILE\ \<\<\'([A-Z_]+)\'$ ]]; then
+    delimiter="${BASH_REMATCH[2]}"
     found=false
     while [ "$index" -lt "$total" ]; do
       body_line="${lines[$index]}"
