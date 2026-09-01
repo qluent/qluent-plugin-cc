@@ -88,7 +88,7 @@ fi
 
 # 3. Allowlist enforcement, by file name within the workspace.
 check_path 'viz-data.json' \
-  'plugins/qluent/CLAUDE.md' \
+  'plugins/qluent/skills/qluent-orientation/SKILL.md' \
   'plugins/qluent/agents/qluent-analyst.md' \
   'plugins/qluent/commands/investigate.md' \
   'plugins/qluent/commands/visualize.md' \
@@ -100,7 +100,7 @@ check_path 'viz-data.json' \
   'tests/test_session_paths.sh'
 
 check_path 'deep-dive-bundle.json' \
-  'plugins/qluent/CLAUDE.md' \
+  'plugins/qluent/skills/qluent-orientation/SKILL.md' \
   'plugins/qluent/commands/deep-dive.md' \
   'plugins/qluent/commands/visualize.md' \
   'plugins/qluent/scripts/render-charts.sh' \

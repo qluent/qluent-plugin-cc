@@ -3,7 +3,7 @@
 # algorithm. Enforces the resolution of #47:
 #   1. The ranking lives in exactly one place: scripts/select-fallback-tree.sh.
 #   2. The skill names the algorithm; callers (post-bash hook, segment-explorer
-#      agent, CLAUDE.md, session-start) defer to it instead of restating it.
+#      agent, orientation skill, session-start) defer to it instead of restating it.
 #   3. Behavior tests pin the ranking decisions against synthetic catalogs.
 
 set -euo pipefail
@@ -111,7 +111,7 @@ out=$("$SCRIPT" "$tmpdir/does-not-exist.json" "current" "channel" || true)
 assert_eq "none" "$(printf '%s' "$out" | cut -f2)" "missing catalog returns none"
 
 # 3. Drift assertions: ranking-distinctive phrases live only in the skill +
-#    the script implementing them. The agent, CLAUDE.md, and session-start.sh
+#    the script implementing them. The agent, the orientation skill, and session-start.sh
 #    must reference, not restate.
 RANKING_PHRASES=(
   'Full coverage'
@@ -120,7 +120,7 @@ RANKING_PHRASES=(
 )
 DRIFT_TARGETS=(
   "$AGENT"
-  "$ROOT/plugins/qluent/CLAUDE.md"
+  "$ROOT/plugins/qluent/skills/qluent-orientation/SKILL.md"
   "$ROOT/plugins/qluent/scripts/session-start.sh"
 )
 for target in "${DRIFT_TARGETS[@]}"; do

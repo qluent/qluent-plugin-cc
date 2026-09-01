@@ -262,7 +262,7 @@ fallback styling.
 
 A handful of JSON files form the rendezvous between qluent producers and
 consumers within a session. This section is the canonical declaration; every
-producer, consumer, test fixture, and the plugin-level `CLAUDE.md` surface
+producer, consumer, test fixture, and the `qluent-orientation` skill surface
 references the file by the same name. The set of files allowed to mention
 each one is pinned by `tests/test_session_paths.sh` — adding a new consumer
 requires updating that allowlist on purpose.

@@ -18,7 +18,7 @@ ANALYST="$ROOT/plugins/qluent/agents/qluent-analyst.md"
 SESSION_START="$ROOT/plugins/qluent/scripts/session-start.sh"
 HOOK="$ROOT/plugins/qluent/scripts/post-bash.sh"
 README="$ROOT/README.md"
-PLUGIN_CLAUDE="$ROOT/plugins/qluent/CLAUDE.md"
+PLUGIN_ORIENTATION="$ROOT/plugins/qluent/skills/qluent-orientation/SKILL.md"
 
 fail() {
   echo "FAIL: $*" >&2
@@ -163,7 +163,7 @@ assert_contains "$COMPOSE_SKILL" 'If you cannot prove'
 
 # 4. Docs advertise the command; visualize declares the renderer boundary.
 assert_contains "$README" '/qluent:query'
-assert_contains "$PLUGIN_CLAUDE" '/qluent:query'
+assert_contains "$PLUGIN_ORIENTATION" '/qluent:query'
 assert_contains "$VISUALIZE" '$QLUENT_DIR/plan-result.json'
 assert_contains "$VISUALIZE" 'composed query (deterministic)'
 assert_contains "$VISUALIZE" '`--simple` is unsupported for query payloads'

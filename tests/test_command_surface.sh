@@ -44,12 +44,12 @@ assert_not_contains "$ROOT/README.md" '/qluent:trend'
 assert_not_contains "$ROOT/README.md" '/qluent:rca'
 assert_not_contains "$ROOT/README.md" '/qluent:compare'
 
-# 3. CLAUDE.md no longer lists the deleted commands or carries the warning
+# 3. the orientation skill no longer lists the deleted commands or carries the warning
 #    that existed only because the commands tempted the wrong workflow.
-assert_not_contains "$ROOT/plugins/qluent/CLAUDE.md" '/qluent:trend'
-assert_not_contains "$ROOT/plugins/qluent/CLAUDE.md" '/qluent:rca'
-assert_not_contains "$ROOT/plugins/qluent/CLAUDE.md" '/qluent:compare'
-assert_not_contains "$ROOT/plugins/qluent/CLAUDE.md" 'Do NOT manually chain'
+assert_not_contains "$ROOT/plugins/qluent/skills/qluent-orientation/SKILL.md" '/qluent:trend'
+assert_not_contains "$ROOT/plugins/qluent/skills/qluent-orientation/SKILL.md" '/qluent:rca'
+assert_not_contains "$ROOT/plugins/qluent/skills/qluent-orientation/SKILL.md" '/qluent:compare'
+assert_not_contains "$ROOT/plugins/qluent/skills/qluent-orientation/SKILL.md" 'Do NOT manually chain'
 
 # 4. Other plugin docs no longer point users at the deleted slash commands.
 assert_not_contains "$ROOT/plugins/qluent/commands/deep-dive.md" '/qluent:trend'
