@@ -53,12 +53,12 @@ Keep the default query workflow when ANY of these hold:
 5. **Explicit raw-data ask** — the user wants a table, an export, a
    spreadsheet, or the SQL itself.
 
-For those questions, prefer a **composed plan** (`qluent plan`, protocol in
-the `compose-authoring` skill) whenever the CLI supports it and the project's
-query catalog (`qluent catalog`) covers the question's bases, metrics and
-dimensions: composed plans are deterministic and catalog-checked. Use the NL
-`qluent query` only when the catalog lacks the vocabulary, the shape exceeds
-the plan node algebra, or the CLI/backend predates the compose surface.
+For those questions, run `qluent query`. The backend decides catalog
+coverage, resolves real values, drafts the plan, compiles it and executes it,
+and returns the plan alongside the rows — that decision is not yours to make
+client-side. Review the returned plan per `/qluent:query`, and edit and re-run
+it through the compose path (`compose-authoring` skill) when the review shows
+it answers a different question from the one asked.
 
 Do not require a tree before answering a data question. Fall through to a
 composed plan, then the NL query. Once the user explicitly chooses an
@@ -67,17 +67,19 @@ deterministic and never re-derive its numbers with a query.
 
 Provenance labels differ by engine:
 
-- **Composed plan** results compile deterministically from the closed-world
-  catalog: label them "composed query (deterministic)" and cite the returned
-  `sql`. They are still not tree evidence — never blend them into Shapley
-  attribution or other tree-derived claims.
-- **NL query** results are produced by LLM-generated SQL: label them "ad-hoc
-  query" (with the returned SQL as the citation) and verify the returned
-  `sql` matches the user's intent before presenting numbers. Run with
-  `qluent query "<question>" --json-output`, check `status`
+- **`qluent query`** results come from the backend's planning workflow: label
+  them "ad-hoc query" (with the returned SQL as the citation) and verify the
+  returned plan and `sql` match the user's intent before presenting numbers.
+  Run with `qluent query "<question>" --json-output`, check `status`
   (`ok` / `clarification_needed` / `error`), and answer clarifications or ask
   follow-ups by re-running with `--thread <thread_id>` from the previous
   response.
+- **Composed plan** results — a plan you ran yourself through the compose path,
+  usually a correction to a returned one — compile deterministically from the
+  closed-world catalog: label them "composed query (deterministic)" and cite
+  the returned `sql`.
+- Neither is tree evidence. Never blend either into Shapley attribution or
+  other tree-derived claims.
 - **Tree** results are deterministic evidence and carry the labels and
   guardrails in the `qluent-tree-protocol` skill.
 
